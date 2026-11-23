@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Census 2027 Enumerator</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#16325c">
+<style>
+:root{--b:#16325c;--b2:#2f5fa8;--s:#e8821e;--bg:#f3f5f8;--l:#d5dbe6;--m:#667085;--ok:#13795b;--r:#b42318;--t:#18202e}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.45 "Segoe UI","Nirmala UI",system-ui,sans-serif;background:var(--bg);color:var(--t)}
+header{background:var(--b);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;border-bottom:4px solid var(--s)}
+header h1{font-size:19px;margin:0;flex:1;cursor:pointer}
+.hb{background:#ffffff22;color:#fff;border:1px solid #fff7;border-radius:8px;min-height:44px;padding:0 14px;cursor:pointer;font:inherit}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid var(--l);border-radius:10px;padding:16px;margin-bottom:14px}
+button,select,input,textarea{font:inherit}
+.btn{min-height:48px;padding:0 20px;border-radius:8px;border:1.5px solid var(--b);background:#fff;color:var(--b);cursor:pointer;font-weight:600}
+.btn.p{background:var(--b);color:#fff}.btn.d{border-color:var(--r);color:var(--r)}.btn:disabled{opacity:.35}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.sp{flex:1}
+input[type=text],input[type=date],input[type=search],select,textarea{width:100%;min-height:48px;padding:8px 12px;border:1.5px solid #b4bdd0;border-radius:8px;background:#fff}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #f6b26b;outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:48px;padding:0 18px;border-radius:24px;border:1.5px solid #b4bdd0;background:#fff;cursor:pointer}
+.chip.on{background:var(--b);border-color:var(--b);color:#fff}
+.q{padding:14px 0;border-bottom:1px solid var(--l)}.q:last-child{border:0}
+.ql{font-weight:600;margin-bottom:8px}.ql i{font-style:normal;color:#fff;background:var(--b2);border-radius:6px;padding:1px 8px;margin-right:8px;font-size:15px}
+.sub{font-size:14px;color:var(--m);margin:2px 0 4px}
+.na{color:var(--m);background:#edf0f5;padding:12px;border-radius:8px;font-style:italic}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{text-align:center;margin:0}.stat b{display:block;font-size:30px;color:var(--b)}
+.bar{height:10px;background:var(--l);border-radius:5px;overflow:hidden}.bar div{height:100%;background:var(--ok)}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:12px 0}
+.tab{white-space:nowrap;min-height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--l);background:#fff;cursor:pointer}
+.tab.on{background:var(--b);color:#fff;border-color:var(--b)}
+table{width:100%;border-collapse:collapse}
+td{padding:9px 10px;border-bottom:1px solid var(--l);vertical-align:top}
+td:first-child{width:44px;color:var(--b2);font-weight:700}td:nth-child(2){width:46%}
+td.a{font-weight:600}td.n{color:var(--m);font-style:italic}
+details{margin-bottom:14px}summary{cursor:pointer;font-weight:700;font-size:18px;padding:12px 16px;background:#e3eaf7;border-radius:8px;min-height:48px}
+.tag{background:var(--s);color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;margin-left:8px}
+.hl{cursor:pointer}.hl:hover{border-color:var(--b2)}
+.muted{color:var(--m)}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<header><h1 id="ti" onclick="A.home()"></h1><button class="hb" id="ins" hidden></button><button class="hb" id="lg"></button></header>
+<main id="m"></main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let lang=localStorage.getItem('lang')||'en';
+const t=s=>{const p=s.split('|');return lang==='hi'?(p[1]||p[0]):p[0]};
+const O=s=>s.split(',').map(x=>{const p=x.split('|');return{v:p[0],h:lang==='hi'?(p[1]||p[0]):p[0]}});
+const today=new Date().toISOString().slice(0,10),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+/* ---------- storage (IndexedDB) ---------- */
+const dbp=new Promise((res,rej)=>{const r=indexedDB.open('census27',1);r.onupgradeneeded=()=>r.result.createObjectStore('hh',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const tx=async(m,f)=>{const d=await dbp;return new Promise((res,rej)=>{const T=d.transaction('hh',m);const o=f(T.objectStore('hh'));T.oncomplete=()=>res(o&&o.result);T.onerror=()=>rej(T.error)})};
+const all=()=>tx('readonly',s=>s.getAll()),put=h=>tx('readwrite',s=>s.put(JSON.parse(JSON.stringify(h)))),del=id=>tx('readwrite',s=>s.delete(id));
+/* ---------- the 40 questions ---------- */
+const YN='Yes|हाँ,No|नहीं',
+GR=['Basic details|मूल विवरण','Religion, family & health|धर्म, परिवार एवं स्वास्थ्य','Education|शिक्षा','Work|कार्य एवं आर्थिक गतिविधि','Birth place & migration|जन्म स्थान एवं प्रवास','Children & vaccination|संतान एवं टीकाकरण','Banks & documents|बैंक एवं दस्तावेज़'],
+REL='Head|मुखिया,Wife|पत्नी,Husband|पति,Son|पुत्र,Daughter|पुत्री,Father|पिता,Mother|माता,Brother|भाई,Sister|बहन,Son-in-law|दामाद,Daughter-in-law|बहू,Grandchild|पोता/पोती,Other relative|अन्य रिश्तेदार,Not related|संबंधित नहीं',
+MAR='Unmarried|अविवाहित,Married|विवाहित,Widow|विधवा,Widower|विधुर,Other|अन्य',
+RLG='Hindu|हिंदू,Muslim|मुस्लिम,Christian|ईसाई,Sikh|सिख,Buddhist|बौद्ध,Jain|जैन,Other religion|अन्य धर्म,No religion|कोई धर्म नहीं',
+DIS='Seeing|दृष्टि,Hearing|श्रवण,Speech|वाणी,Locomotor|चलन,Intellectual|बौद्धिक,Mental illness|मानसिक रोग,Multiple|एकाधिक,Other|अन्य',
+QUA='Below primary|प्राथमिक से कम,Primary|प्राथमिक,Middle|मिडिल,Secondary (10th)|हाई स्कूल,Higher secondary (12th)|इंटरमीडिएट,Diploma / ITI|डिप्लोमा / आईटीआई,Graduate|स्नातक,Post-graduate|स्नातकोत्तर,Doctorate|डॉक्टरेट,Other|अन्य',
+ECO='Cultivator|कृषक,Agricultural labourer|कृषि मजदूर,Household industry worker|घरेलू उद्योग कामगार,Other worker|अन्य कामगार,Non-worker|अकामगार',
+CLS='Self-employed|स्वरोजगार,Regular salaried|नियमित,Contract|संविदा,Casual labour|दैनिक मजदूर,Employer|नियोक्ता,Unpaid family worker|अवैतनिक पारिवारिक कामगार',
+NON='Student|विद्यार्थी,Household duties|गृहकार्य,Dependent|आश्रित,Pensioner|पेंशनभोगी,Retired|सेवानिवृत्त,Other|अन्य',
+SEK='Seeking work|काम की तलाश में,Available for work|काम के लिए उपलब्ध,Neither|दोनों नहीं',
+TRV='Walk|पैदल,Bicycle|साइकिल,Two-wheeler|दोपहिया,Car / jeep|कार / जीप,Bus|बस,Train / metro|ट्रेन / मेट्रो,Other|अन्य,Works from home|घर से कार्य',
+MIG='Work / employment|काम / रोज़गार,Business|व्यापार,Education|शिक्षा,Marriage|विवाह,Moved with household|परिवार के साथ,Birth|जन्म,Other|अन्य',
+VAC='Government facility|सरकारी केंद्र,Private facility|निजी केंद्र,Not vaccinated|टीका नहीं लगा,Other|अन्य';
+const Q=[],q=(n,tx,g,...f)=>Q.push({n,t:tx,g,f}),PL=k=>[[k+'s','t','','State|राज्य'],[k+'d','t','','District|जिला'],[k+'v','t','','Village / Town|गाँव / शहर']],
+HAS=(k,lb,mx,ty)=>[[k+'h','yn','','Available?|उपलब्ध है?'],[k,ty||'dg','',lb,k+'h',mx]];
+q(1,'What is the name of the person?|व्यक्ति का नाम क्या है?',0,['q1','t']);
+q(2,'What is your relationship with the head of the family?|परिवार के मुखिया से आपका क्या संबंध है?',0,['q2','s',REL]);
+q(3,'What is your sex? (Male / Female / Other)|लिंग (पुरुष/महिला/अन्य) क्या है?',0,['q3','s','Male|पुरुष,Female|महिला,Other|अन्य']);
+q(4,'What is your date of birth? (and current age)|जन्मतिथि क्या है? (और वर्तमान आयु कितनी है?)',0,['q4d','d','','Date of birth|जन्मतिथि'],['q4a','dg','','Age (years)|आयु (वर्ष)','',3]);
+q(5,'What is your current marital status?|वर्तमान वैवाहिक स्थिति क्या है?',0,['q5','s',MAR]);
+q(6,'What was your age at the time of marriage?|विवाह के समय आपकी आयु कितनी थी?',0,['q6','dg','','','',3]);
+q(7,"What is the spouse's name?|पति/पत्नी का नाम क्या है?",0,['q7','dl']);
+q(8,'What is your nationality?|आपकी राष्ट्रीयता क्या है?',0,['q8','s','Indian|भारतीय,Other|अन्य']);
+q(9,'What is your religion?|आपका धर्म क्या है?',1,['q9','s',RLG]);
+q(10,'Do you belong to a Scheduled Caste (SC), Scheduled Tribe (ST) or other caste?|क्या आप अनुसूचित जाति (SC), अनुसूचित जनजाति (ST) या अन्य जाति से संबंधित हैं?',1,['q10','s','SC|अनुसूचित जाति (SC),ST|अनुसूचित जनजाति (ST),Other caste|अन्य जाति']);
+q(11,"What is the father's name and related details?|पिता का नाम और संबंधित विवरण क्या है?",1,['q11','dl']);
+q(12,"What is the mother's name and related details?|माता का नाम और संबंधित विवरण क्या है?",1,['q12','dl']);
+q(13,'Do you have any disability? (If yes, type)|क्या आपको कोई दिव्यांगता (विकलांगता) है? (यदि हाँ, तो प्रकार)',1,['q13h','yn'],['q13t','s',DIS,'Type|प्रकार','q13h']);
+q(14,'What is your mother tongue? Which other languages do you know?|आपकी मातृभाषा कौन-सी है? आपको अन्य कौन-सी भाषाएँ आती हैं?',1,['q14a','t','','Mother tongue|मातृभाषा'],['q14b','t','','Other languages known|अन्य भाषाएँ']);
+q(15,'Can you read and write? Are you digitally literate?|क्या आप पढ़-लिख सकते हैं? क्या आप डिजिटल रूप से साक्षर हैं?',1,['q15a','yn','','Can read & write|पढ़-लिख सकते हैं?'],['q15b','yn','','Digitally literate|डिजिटल साक्षर?']);
+q(16,'Are you currently studying in any educational institution?|क्या आप वर्तमान में किसी शैक्षणिक संस्थान में पढ़ रहे हैं?',2,['q16','yn']);
+q(17,'What is your highest educational qualification and subject / stream?|आपकी प्राप्त उच्चतम शैक्षणिक योग्यता क्या हैं और विषय/शाखा क्या है?',2,['q17a','s',QUA,'Highest qualification|उच्चतम योग्यता'],['q17b','t','','Subject / stream|विषय / शाखा']);
+q(18,'Did you do any work in the last one year?|क्या आपने पिछले एक वर्ष में कोई काम किया हैं?',3,['q18','yn']);
+q(19,'What is your category of economic activity?|आपकी आर्थिक गतिविधि की श्रेणी क्या है?',3,['q19','s',ECO]);
+q(20,'What is your occupation / profession?|आपका व्यवसाय/पेशा क्या है?',3,['q20','t']);
+q(21,'What is the type of your industry, trade or service?|आपका उद्योग, व्यापार या सेवा का प्रकार क्या है?',3,['q21','t']);
+q(22,'What type of worker are you? (self-employed, regular, contract etc.)|आप किस प्रकार के कामगार हैं? (स्वरोजगार, नियमित, संविदा आदि)',3,['q22','s',CLS]);
+q(23,'If not working, what is your main non-economic activity?|यदि आप कार्यरत नहीं हैं, तो आपकी मुख्य गैर-आर्थिक गतिविधि क्या है?',3,['q23','s',NON]);
+q(24,'Are you seeking work or available for work?|क्या आप काम की तलाश में हैं या काम करने के लिए उपलब्ध हैं?',3,['q24','s',SEK]);
+q(25,'How do you travel to your place of work?|आप अपने कार्यस्थल तक आने-जाने की व्यवस्था कैसे करते हैं?',3,['q25','s',TRV]);
+q(26,'Where were you born? (State, District, Village/Town)|आपका जन्म कहाँ हुआ था? (राज्य, जिला, गाँव/शहर)',4,...PL('q26'));
+q(27,'Where did you live before this?|इससे पहले आप कहाँ रहते थे?',4,...PL('q27'));
+q(28,'What was the main reason for coming to the present place?|वर्तमान स्थान पर आने का मुख्य कारण क्या था?',4,['q28','s',MIG]);
+q(29,'Since how long have you been living in the present village/town after your last migration?|आप वर्तमान गाँव/शहर में पिछले प्रवास के बाद से कितने समय से रह रहे हैं?',4,['q29','dg','','Years|वर्ष','',3]);
+q(30,'What is your permanent residential address? (State, District, Village/Town)|आपका स्थायी आवासीय पता क्या है? (राज्य, जिला, गाँव/शहर)',4,...PL('q30'));
+q(31,'How many children are currently alive? (Only for women of the specified marital category)|वर्तमान में जीवित बच्चों की संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',5,['q31','dg','','','',2]);
+q(32,'Total number of children born alive? (Only for women of the specified marital category)|जीवित जन्मे बच्चों की कुल संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',5,['q32','dg','','','',2]);
+q(33,'Number of children born alive in the last one year? (Only for women of the specified marital category)|पिछले एक वर्ष में जीवित जन्मे बच्चों की संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',5,['q33','dg','','','',2]);
+q(34,'Where did you get the COVID-19 vaccination?|आपने कोविड-19 का टीकाकरण कहाँ करवाया था?',5,['q34','s',VAC]);
+q(35,'How many bank accounts do you have in total?|आपके कुल कितने बैंक खाते हैं?',6,['q35','dg','','','',2]);
+q(36,'What is your mobile number? (if available)|आपका मोबाइल नंबर क्या है? (यदि उपलब्ध हो)',6,...HAS('q36','Mobile number|मोबाइल नंबर',10));
+q(37,'What is your Aadhaar number? (if available)|आपका आधार नंबर क्या है? (यदि उपलब्ध हो)',6,...HAS('q37','Aadhaar number|आधार नंबर',12));
+q(38,'What is your Voter ID number? (if available)|आपका मतदाता पहचान-पत्र (Voter ID) नंबर क्या है? (यदि उपलब्ध हो)',6,...HAS('q38','Voter ID number|मतदाता पहचान-पत्र नंबर',12,'t'));
+q(39,'Do you have an Indian passport? (if yes, number)|क्या आपके पास भारतीय पासपोर्ट है? (यदि हाँ, तो नंबर)',6,...HAS('q39','Passport number|पासपोर्ट नंबर',12,'t'));
+q(40,'Do you have a driving licence? (if yes, number)|क्या आपके पास ड्राइविंग लाइसेंस है? (यदि हाँ, तो नंबर)',6,...HAS('q40','Licence number|लाइसेंस नंबर',20,'t'));
+/* ---------- logic ---------- */
+const WK=['Cultivator','Agricultural labourer','Household industry worker','Other worker'];
+const NA=(n,a)=>{const ev=a.q5&&a.q5!=='Unmarried',w=a.q18==='Yes'||WK.includes(a.q19),nw=a.q18==='No'||a.q19==='Non-worker';
+ if(n==6||n==7)return a.q5==='Unmarried';
+ if(n>=31&&n<=33)return!(a.q3==='Female'&&ev);
+ if([20,21,22,25].includes(n))return nw&&!w;
+ if(n==23)return w&&!nw;
+ return false};
+const age=d=>{const b=new Date(d),n=new Date();let y=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))y--;return Math.max(y,0)};
+const dmy=v=>/^\d{4}-\d\d-\d\d$/.test(v)?v.split('-').reverse().join('-'):v;
+const disp=(f,v)=>{if(!v)return'';const o=f[1]==='yn'?YN:f[1]==='s'?f[2]:null;if(o){const x=O(o).find(y=>y.v===v);return x?x.h:v}return f[1]==='d'?dmy(v):v};
+const show=(x,a)=>x.f.filter(f=>!f[4]||a[f[4]]==='Yes').map(f=>{const v=disp(f,a[f[0]]);return v&&x.f.length>1&&f[3]?t(f[3])+': '+v:v}).filter(Boolean).join('  |  ');
+/* ---------- state ---------- */
+let V={v:'home'},HH=[],filt='';
+const mname=m=>m.a.q1||t('(no name)|(नाम नहीं)');
+async function R(){HH=await all();HH.sort((a,b)=>b.ts-a.ts);
+ $('#ti').textContent=t('Census of India 2027 – Enumerator|भारत की जनगणना 2027 – गणनाकार');$('#lg').textContent=lang==='en'?'हिंदी':'English';
+ $('#m').innerHTML=V.v==='home'?homeV():V.v==='hhf'?hhfV():V.v==='hh'?hhV():memV();document.title=$('#ti').textContent}
+/* ---------- views ---------- */
+function homeV(){const ms=HH.flatMap(h=>h.members);
+ return`<div class="card stats"><div class="stat"><b>${HH.length}</b>${t('Families|परिवार')}</div><div class="stat"><b>${ms.length}</b>${t('Persons|व्यक्ति')}</div><div class="stat"><b>${ms.filter(m=>m.a.q3==='Male').length}</b>${t('Male|पुरुष')}</div><div class="stat"><b>${ms.filter(m=>m.a.q3==='Female').length}</b>${t('Female|महिला')}</div></div>
+<div class="row" style="margin-bottom:14px"><button class="btn p" onclick="A.addFam()">+ ${t('Add family|परिवार जोड़ें')}</button><input type="search" style="flex:1;min-width:200px;width:auto" placeholder="${t('Search family no., address or head name|परिवार संख्या, पता या मुखिया का नाम खोजें')}" value="${esc(filt)}" oninput="filt=this.value;$('#lst').innerHTML=lst()"><button class="btn" onclick="A.exp(HH)" ${HH.length?'':'disabled'}>${t('Export all (CSV)|सभी निर्यात करें (CSV)')}</button></div><div id="lst">${lst()}</div>`}
+function lst(){const f=filt.trim().toLowerCase(),L=HH.filter(h=>!f||[h.no,h.addr,...h.members.map(m=>m.a.q1)].join(' ').toLowerCase().includes(f));
+ if(!L.length)return`<div class="card muted">${HH.length?t('No family matches your search.|कोई परिवार नहीं मिला।'):t('No families yet. Tap “Add family” to begin.|अभी कोई परिवार नहीं है। शुरू करने के लिए “परिवार जोड़ें” दबाएँ।')}</div>`;
+ return L.map(h=>{const hd=h.members.find(m=>m.h);return`<div class="card hl" onclick="A.open('${h.id}')"><b>${esc(hd?mname(hd):t('(head not added)|(मुखिया नहीं जोड़ा)'))}</b> <span class="muted">· ${t('Family|परिवार')} ${esc(h.no||'—')} · ${h.members.length} ${t('members|सदस्य')} · ${dmy(h.date)}</span><div class="muted">${esc(h.addr)}</div></div>`}).join('')}
+function hhfV(){const h=V.h;return`<div class="card"><h2 style="margin-top:0">${t('Family details|परिवार का विवरण')}</h2><div class="grid">
+<div><div class="sub">${t('Family / household number|परिवार / गृह संख्या')}</div><input type="text" data-h="no" value="${esc(h.no)}"></div>
+<div><div class="sub">${t('Enumerator name|गणनाकार का नाम')}</div><input type="text" data-h="enu" value="${esc(h.enu)}"></div>
+<div><div class="sub">${t('Date|दिनांक')}</div><input type="date" data-h="date" value="${esc(h.date)}"></div></div>
+<div class="sub" style="margin-top:12px">${t('Address|पता')}</div><textarea data-h="addr" rows="2">${esc(h.addr)}</textarea>
+<div class="row" style="margin-top:14px"><button class="btn" onclick="A.home()">${t('Cancel|रद्द करें')}</button><button class="btn p" onclick="A.saveHH()">${h.members.length?t('Save|सहेजें'):t('Save & add family head|सहेजें और मुखिया जोड़ें')}</button></div></div>`}
+function hhV(){const h=V.h;return`<div class="row" style="margin-bottom:14px"><button class="btn" onclick="A.home()">← ${t('All families|सभी परिवार')}</button><span class="sp"></span><button class="btn" onclick="A.editHH()">${t('Edit details|विवरण बदलें')}</button><button class="btn" onclick="A.exp([V.h])">${t('Export (CSV)|निर्यात (CSV)')}</button><button class="btn d" onclick="A.delHH()">${t('Delete family|परिवार हटाएँ')}</button></div>
+<div class="card"><h2 style="margin:0 0 6px">${t('Family|परिवार')} ${esc(h.no||'—')}</h2><div>${esc(h.addr)||'—'}</div><div class="muted">${t('Enumerator|गणनाकार')}: ${esc(h.enu)||'—'} · ${t('Date|दिनांक')}: ${dmy(h.date)}</div></div>
+${h.members.map((m,i)=>`<details ${i?'':'open'}><summary>${i+1}. ${esc(mname(m))}${m.h?`<span class="tag">${t('Head|मुखिया')}</span>`:''}<span class="muted" style="font-weight:400"> · ${disp(['','s','Male|पुरुष,Female|महिला,Other|अन्य'],m.a.q3)} ${m.a.q4a?', '+m.a.q4a+' '+t('yrs|वर्ष'):''}</span></summary><div class="card" style="margin-top:8px"><div class="row" style="margin-bottom:8px"><button class="btn" onclick="A.editMem(${i})">${t('Edit|बदलें')}</button>${m.h&&h.members.length>1?'':`<button class="btn d" onclick="A.delMem(${i})">${t('Delete|हटाएँ')}</button>`}</div><table>${Q.map(x=>{const na=NA(x.n,m.a);return`<tr><td>${x.n}</td><td>${esc(t(x.t))}</td><td class="${na?'n':'a'}">${na?t('Not applicable|लागू नहीं'):esc(show(x,m.a))||'—'}</td></tr>`}).join('')}</table></div></details>`).join('')}
+<button class="btn p" onclick="A.newMem(V.h)">+ ${h.members.length?t('Add member|सदस्य जोड़ें'):t('Add family head|मुखिया जोड़ें')}</button>`}
+function fld(f,a,hd){const[k,ty,o,lb,cd,mx]=f;if(cd&&a[cd]!=='Yes')return'';const v=a[k]??'';let h;const sub=lb?`<div class="sub">${esc(t(lb))}</div>`:'';
+ let op=ty==='yn'?YN:o;if(k==='q2')op=hd?'Head|मुखिया':REL.split(',').slice(1).join(',');
+ if(ty==='yn'||(ty==='s'&&O(op).length<=6))h=`<div class="chips">${O(op).map(x=>`<button type="button" class="chip${v===x.v?' on':''}" data-k="${k}" data-v="${esc(x.v)}">${esc(x.h)}</button>`).join('')}</div>`;
+ else if(ty==='s')h=`<select data-k="${k}"><option value="">${t('Select|चुनें')}</option>${O(op).map(x=>`<option value="${esc(x.v)}"${v===x.v?' selected':''}>${esc(x.h)}</option>`).join('')}</select>`;
+ else if(ty==='d')h=`<input type="date" data-k="${k}" data-d="1" max="${today}" value="${esc(v)}">`;
+ else h=`<input type="text" data-k="${k}" value="${esc(v)}"${ty==='dg'?' inputmode="numeric" data-dg="1"':''}${mx?` maxlength="${mx}"`:''}${ty==='dl'?' list="ml"':''}>`;
+ return`<div>${sub}${h}</div>`}
+function memV(){const{h,m,s}=V,a=m.a,done=Q.filter(x=>!NA(x.n,a)&&x.f.some(f=>a[f[0]])).length,last=s==GR.length-1;
+ const names=h.members.filter(x=>x!==m&&x.a.q1).map(x=>`<option value="${esc(x.a.q1)}">`).join('');
+ return`<div class="row"><button class="btn" onclick="A.back()">← ${t('Back to family|परिवार पर वापस')}</button><h2 style="margin:0">${m.h?t('Head of family|परिवार का मुखिया'):t('Member|सदस्य')}${a.q1?' – '+esc(a.q1):''}</h2></div>
+<div class="bar" style="margin-top:12px"><div style="width:${done*2.5}%"></div></div><div class="muted">${done}/40 ${t('answered|उत्तर दिए गए')} · ${t('Section|खंड')} ${s+1}/${GR.length}</div>
+<div class="tabs">${GR.map((g,i)=>`<button class="tab${i==s?' on':''}" onclick="A.step(${i})">${esc(t(g))}</button>`).join('')}</div>
+<datalist id="ml">${names}</datalist><div class="card">${Q.filter(x=>x.g===s).map(x=>`<div class="q"><div class="ql"><i>${x.n}</i>${esc(t(x.t))}</div>${NA(x.n,a)?`<div class="na">${t('Not applicable|लागू नहीं')}</div>`:x.f.length>1?`<div class="grid">${x.f.map(f=>fld(f,a,m.h)).join('')}</div>`:fld(x.f[0],a,m.h)}</div>`).join('')}</div>
+<div class="row"><button class="btn" ${s?'':'disabled'} onclick="A.step(${s-1})">← ${t('Previous|पिछला')}</button><span class="sp"></span>${last?`<button class="btn" onclick="A.fin(1)">${t('Save & add another member|सहेजें और अगला सदस्य जोड़ें')}</button><button class="btn p" onclick="A.fin(0)">${t('Save & finish|सहेजें और समाप्त करें')}</button>`:`<button class="btn p" onclick="A.step(${s+1})">${t('Next|अगला')} →</button>`}</div>`}
+/* ---------- export ---------- */
+function exportCSV(hs){const cols=Q.flatMap(x=>x.f.map(f=>[x,f])),E=s=>s.split('|')[0];
+ const head=['Family No','Address','Enumerator','Date','Member #','Family head',...cols.map(([x,f])=>`Q${x.n}. ${E(x.t)}`+(x.f.length>1?` - ${E(f[3]||f[0])}`:''))];
+ const rows=hs.flatMap(h=>h.members.map((m,i)=>[h.no,h.addr,h.enu,h.date,i+1,m.h?'Yes':'No',...cols.map(([x,f])=>NA(x.n,m.a)?'N/A':f[4]&&m.a[f[4]]!=='Yes'?'':m.a[f[0]]||'')]));
+ const c=[head,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""').replace(/\r?\n/g,' ')}"`).join(',')).join('\r\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8'}));a.download='census2027_'+today+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+/* ---------- actions ---------- */
+const P=async()=>{if(!V.dirty)return;V.dirty=0;const{h,m}=V;if(!h.members.includes(m))h.members.push(m);h.ts=Date.now();await put(h)};
+const A={home(){V={v:'home'};R()},
+ addFam(){V={v:'hhf',h:{id:uid(),no:'',addr:'',enu:'',date:today,members:[],ts:Date.now(),isNew:1}};R()},
+ editHH(){V={v:'hhf',h:V.h};R()},
+ async saveHH(){const h=V.h;delete h.isNew;h.ts=Date.now();await put(h);h.members.length?A.open(h.id):A.newMem(h)},
+ open(id){V={v:'hh',h:HH.find(x=>x.id==id)||V.h};R()},
+ newMem(h){const f=!h.members.length;V={v:'mem',h,s:0,m:{id:uid(),h:f,a:f?{q2:'Head',q8:'Indian'}:{q8:'Indian'}},dirty:f?0:0};R()},
+ editMem(i){V={v:'mem',h:V.h,m:V.h.members[i],s:0};R()},
+ async step(i){await P();V.s=i;await R();scrollTo(0,0)},
+ async fin(add){await P();add?A.newMem(V.h):A.open(V.h.id)},
+ async back(){await P();A.open(V.h.id)},
+ async delHH(){if(confirm(t('Delete this family and all its members?|इस परिवार और सभी सदस्यों को हटाएँ?'))){await del(V.h.id);A.home()}},
+ async delMem(i){if(confirm(t('Delete this member?|इस सदस्य को हटाएँ?'))){V.h.members.splice(i,1);await put(V.h);R()}},
+ exp:exportCSV};
+const M=$('#m');
+M.addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c||V.v!=='mem')return;const a=V.m.a,k=c.dataset.k;a[k]=a[k]===c.dataset.v?'':c.dataset.v;V.dirty=1;R()});
+M.addEventListener('change',e=>{const el=e.target,k=el.dataset.k;if(V.v==='hhf'||!k)return;V.m.a[k]=el.value;V.dirty=1;if(el.dataset.d&&el.value){V.m.a.q4a=String(age(el.value));R()}else if(el.tagName==='SELECT')R();else P()});
+M.addEventListener('input',e=>{const el=e.target;if(el.dataset.h){V.h[el.dataset.h]=el.value;return}if(!el.dataset.k)return;if(el.dataset.dg)el.value=el.value.replace(/\D/g,'');if(el.type==='text'){V.m.a[el.dataset.k]=el.value;V.dirty=1}});
+M.addEventListener('change',e=>{if(e.target.dataset.h)V.h[e.target.dataset.h]=e.target.value});
+$('#lg').onclick=()=>{lang=lang==='en'?'hi':'en';localStorage.setItem('lang',lang);R()};
+let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('#ins').hidden=false;$('#ins').textContent=t('Install app|ऐप इंस्टॉल करें')});
+$('#ins').onclick=async()=>{if(dp){dp.prompt();await dp.userChoice;dp=null;$('#ins').hidden=true}};
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+navigator.storage&&navigator.storage.persist&&navigator.storage.persist();
+R();
+</script></body></html>
