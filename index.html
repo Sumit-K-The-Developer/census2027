@@ -62,7 +62,7 @@ details{margin-bottom:14px}summary{display:flex;flex-wrap:wrap;align-items:cente
 .chk{display:flex;align-items:center;gap:10px;min-height:44px;margin-top:8px;cursor:pointer}.chk input{width:24px;height:24px;flex:none}
 .tab b.ok{color:var(--ok)}.tab.on b.ok{color:#a5f0cf}
 .pills{display:contents}
-.pill{background:#fff;border:1px solid var(--l);border-radius:14px;padding:2px 10px;color:var(--t);font-weight:400;font-size:15px}
+.pill{color:var(--t);font-weight:400;font-size:15px}.pill+.pill::before{content:'·';color:var(--m);margin-right:8px}
 summary::-webkit-details-marker{display:none}summary::before{content:'▸ ';color:var(--b2)}details[open]>summary::before{content:'▾ '}
 .q{position:relative}.q.key .ql{padding-right:22px}.kd{position:absolute;top:14px;right:6px;width:10px;height:10px;border-radius:50%;background:#1fa463}
 </style></head>
@@ -195,7 +195,7 @@ function homeV(){const L=famsOf(),ms=L.flatMap(h=>h.members),ebs=[...new Set([..
  const tb=(v,l)=>`<button class="tab${ebTab===v?' on':''}" data-ebt="${esc(v)}">${l}</button>`,en=e=>e==='-'?t('No EB|EB नहीं'):'EB '+esc(e);
  return`<div class="tabs">${tb('',t('All EBs|सभी EB')+' ('+HH.length+')')}${ebs.map(e=>tb(e,en(e)+' ('+HH.filter(h=>(h.eb||'-')===e).length+')')).join('')}</div>
 <div class="card stats"><div class="stat"><b>${L.length}</b>${t('Families|परिवार')}</div><div class="stat"><b>${ms.length}</b>${t('Persons|व्यक्ति')}</div><div class="stat"><b>${ms.filter(m=>m.a.q3==='Male').length}</b>${t('Male|पुरुष')}</div><div class="stat"><b>${ms.filter(m=>m.a.q3==='Female').length}</b>${t('Female|महिला')}</div></div>
-<div class="row" style="margin-bottom:14px"><button class="btn p" onclick="A.addFam()">+ ${t('Add family|परिवार जोड़ें')}</button><input type="search" style="flex:1;min-width:200px;width:auto" placeholder="${t('Search house, building, EB, address or head name|मकान, भवन, EB, पता या मुखिया का नाम खोजें')}" value="${esc(filt)}" oninput="filt=this.value;$('#lst').innerHTML=lst()"><button class="btn" onclick="A.exp(famsOf())" ${L.length?'':'disabled'}>${t('Export CSV|CSV निर्यात')} – ${ebTab?en(ebTab):t('all|सभी')}</button></div><div class="row" style="margin-bottom:14px"><button class="btn" onclick="A.backup()">⬇ ${t('Backup (file)|बैकअप (फ़ाइल)')}</button><button class="btn" onclick="$('#rf').click()">⬆ ${t('Restore from backup|बैकअप से वापस लाएँ')}</button><button class="btn" onclick="A.trash()">🗑 ${t('Trash|कचरा पेटी')} (${TR.length})</button><input type="file" id="rf" accept=".json,application/json" hidden></div><div id="lst">${lst()}</div>`}
+<div class="row" style="margin-bottom:14px"><button class="btn p" onclick="A.addFam()">+ ${t('Add family|परिवार जोड़ें')}</button><input type="search" style="flex:1;min-width:200px;width:auto" placeholder="${t('Search house, building, EB, address or head name|मकान, भवन, EB, पता या मुखिया का नाम खोजें')}" value="${esc(filt)}" oninput="filt=this.value;$('#lst').innerHTML=lst()"><button class="btn" onclick="A.exp(famsOf())" ${L.length?'':'disabled'}>${t('Export Excel|Excel निर्यात')} – ${ebTab?en(ebTab):t('all|सभी')}</button><button class="btn" onclick="A.expCsv(famsOf())" ${L.length?'':'disabled'}>CSV</button></div><div class="row" style="margin-bottom:14px"><button class="btn" onclick="A.backup()">⬇ ${t('Backup (file)|बैकअप (फ़ाइल)')}</button><button class="btn" onclick="$('#rf').click()">⬆ ${t('Restore from backup|बैकअप से वापस लाएँ')}</button><button class="btn" onclick="A.trash()">🗑 ${t('Trash|कचरा पेटी')} (${TR.length})</button><input type="file" id="rf" accept=".json,application/json" hidden></div><div id="lst">${lst()}</div>`}
 function lst(){const f=filt.trim().toLowerCase(),L=famsOf().filter(h=>!f||[h.no,h.hno,h.bno,h.eb,addrOf(h),...h.members.map(m=>m.a.q1)].join(' ').toLowerCase().includes(f));
  if(!L.length)return`<div class="card muted">${HH.length?t('No family matches.|कोई परिवार नहीं मिला।'):t('No families yet. Tap “Add family” to begin.|अभी कोई परिवार नहीं है। शुरू करने के लिए “परिवार जोड़ें” दबाएँ।')}</div>`;
  return L.map(h=>{const hd=h.members.find(m=>m.h),p=fprog(h);return`<div class="card hl" onclick="A.open('${h.id}')"><b>${esc(hd?mname(hd):t('(head not added)|(मुखिया नहीं जोड़ा)'))}</b> <span class="muted">· ${h.members.length} ${t('members|सदस्य')} · ${dmy(h.date)}</span><div style="margin-top:4px"><b>${t('House No.|मकान सं.')}</b> ${esc(hn(h)||'—')} &nbsp; <b>${t('Building No.|भवन सं.')}</b> ${esc(h.bno||'—')} &nbsp; <b>EB</b> ${esc(h.eb||'—')}</div><div class="muted">${esc(addrOf(h))}</div>${p[1]?`<div class="row" style="margin-top:6px"><div class="mini sp"><div style="width:${pc(p[0],p[1])}%"></div></div><span class="muted" style="font-size:14px">${pc(p[0],p[1])}%</span></div>`:''}<div class="row" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn" style="min-height:40px;padding:0 14px" onclick="A.expOne('${h.id}')">⬇ ${t('Export|निर्यात')}</button><label class="chk" style="margin:0"><input type="checkbox" data-expd="${h.id}" ${h.exp&&h.exp>=h.ts?'checked':''}> ${t('Exported|निर्यात हो गया')}</label>${h.exp&&h.exp<h.ts?`<span class="muted" style="font-size:14px">${t('changed after export|निर्यात के बाद बदला')}</span>`:''}</div></div>`}).join('')}
@@ -287,15 +287,53 @@ function trashV(){const L=[...TR].sort((a,b)=>b.ts-a.ts);
 <p class="muted">${t('Deleted families and members stay here until you delete them permanently.|हटाए गए परिवार और सदस्य यहाँ तब तक रहते हैं जब तक आप उन्हें स्थायी रूप से न हटाएँ।')}</p>
 ${L.length?L.map(x=>`<div class="card"><div class="row"><div class="sp"><b>${esc(x.label)}</b><span class="tag">${x.type==='family'?t('Family|परिवार'):t('Member|सदस्य')}</span><div class="muted">${esc(x.sub)} · ${t('deleted|हटाया')} ${ago(x.ts)}</div></div><button class="btn p" onclick="A.trashRestore('${x.tid}')">${t('Restore|वापस लाएँ')}</button><button class="btn d" onclick="A.trashDrop('${x.tid}')">${t('Delete forever|हमेशा के लिए हटाएँ')}</button></div></div>`).join(''):`<div class="card muted">${t('Trash is empty.|कचरा पेटी खाली है।')}</div>`}`}
 /* ---------- export ---------- */
-async function exportCSV(hs,name){const L0=lang;lang='en';const E=s=>s.split('|')[0],rows=[];
- hs.forEach((h,k)=>{const hd=h.members.find(m=>m.h)||h.members[0];
-  rows.push(['Building No',h.bno||'','House No',hn(h),'Head',hd?hd.a.q1||'':'','EB',h.eb||'','Enumerator',cfg.enu||'','Date',dmy(h.date)||'','Address',addrOf(h)]);
-  rows.push(['Question',...h.members.map((m,i)=>'Member '+(i+1)+(m.h?' (Head)':''))]);
-  Q.forEach(x=>rows.push(['Q'+x.n+'. '+E(x.t),...h.members.map(m=>NA(x.n,m.a)?'N/A':show(x,m.a))]));
-  if(k<hs.length-1)rows.push([],[])});
- lang=L0;
- const c=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""').replace(/\r?\n/g,' ')}"`).join(',')).join('\r\n');
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8'}));a.download=name||('census2027_'+today+'.csv');a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+/* ---------- export: Excel (.xlsx, merged bold headings, auto widths/heights) or CSV ---------- */
+const famBlocks=hs=>{const L0=lang;lang='en';const E=s=>s.split('|')[0];
+ const out=hs.map(h=>{const hd=h.members.find(m=>m.h)||h.members[0],hdn=hd?hd.a.q1||'':'';
+  return{title:'Building No: '+(h.bno||'—')+'   |   House No: '+(hn(h)||'—')+'   |   Head: '+(hdn||'—'),
+   sub:['EB: '+(h.eb||'—'),'Enumerator: '+(cfg.enu||'—'),'Date: '+(dmy(h.date)||'—'),'Address: '+(addrOf(h)||'—')].join('   |   '),
+   pairs:['Building No',h.bno||'','House No',hn(h),'Head',hdn,'EB',h.eb||'','Enumerator',cfg.enu||'','Date',dmy(h.date)||'','Address',addrOf(h)],
+   head:['Question',...h.members.map((m,i)=>'Member '+(i+1)+(m.h?' (Head)':''))],
+   rows:Q.map(x=>[{v:'Q'+x.n+'. '+E(x.t),q:1},...h.members.map(m=>NA(x.n,m.a)?{v:'N/A',na:1}:{v:show(x,m.a)})])}});
+ lang=L0;return out};
+const toCSV=bl=>{const rows=[];bl.forEach((b,k)=>{rows.push(b.pairs,b.head,...b.rows.map(r=>r.map(c=>c.v)));if(k<bl.length-1)rows.push([],[])});
+ return'\ufeff'+rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""').replace(/\r?\n/g,' ')}"`).join(',')).join('\r\n')};
+const crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})(),
+crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=crcT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0};
+function zipStore(files){const enc=new TextEncoder(),out=[],cen=[],w16=n=>[n&255,(n>>8)&255],w32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];let off=0;
+ for(const f of files){const nm=enc.encode(f.name),d=enc.encode(f.text),c=crc32(d);
+  const lh=[0x50,0x4b,3,4,...w16(20),...w16(0x0800),...w16(0),...w16(0),...w16(0x21),...w32(c),...w32(d.length),...w32(d.length),...w16(nm.length),...w16(0),...nm];
+  cen.push([0x50,0x4b,1,2,...w16(20),...w16(20),...w16(0x0800),...w16(0),...w16(0),...w16(0x21),...w32(c),...w32(d.length),...w32(d.length),...w16(nm.length),...w16(0),...w16(0),...w16(0),...w16(0),...w32(0),...w32(off),...nm]);
+  out.push(new Uint8Array(lh),d);off+=lh.length+d.length}
+ let cs=0;cen.forEach(c=>{out.push(new Uint8Array(c));cs+=c.length});
+ out.push(new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...w16(files.length),...w16(files.length),...w32(cs),...w32(off),0,0]));
+ return new Blob(out,{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})}
+const xe=s=>String(s??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),
+cl=i=>{let s='';i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s},
+vw=s=>[...String(s)].reduce((a,c)=>a+(c.charCodeAt(0)>255?1.6:1),0),
+nln=(s,w)=>String(s).split('\n').reduce((a,p)=>a+Math.max(1,Math.ceil(vw(p)/Math.max(w-1.5,4))),0);
+const XNS='http://schemas.openxmlformats.org/spreadsheetml/2006/main',XH='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+XSTY=XH+`<styleSheet xmlns="${XNS}"><fonts count="5"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><i/><sz val="11"/><color rgb="FF8A93A6"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF16325C"/><name val="Calibri"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF16325C"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE3EAF7"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF3F5F8"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBFC7D8"/></left><right style="thin"><color rgb="FFBFC7D8"/></right><top style="thin"><color rgb="FFBFC7D8"/></top><bottom style="thin"><color rgb="FFBFC7D8"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1" indent="1"/></xf><xf numFmtId="0" fontId="4" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1" indent="1"/></xf><xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+function toXLSX(bl){const nm=Math.max(1,...bl.map(b=>b.head.length-1)),W=[54];
+ for(let j=1;j<=nm;j++){let mx=16;bl.forEach(b=>{if(b.head[j]!==undefined){mx=Math.max(mx,vw(b.head[j])+4);b.rows.forEach(r=>{mx=Math.max(mx,vw(r[j].v)*0.95+3)})}});W.push(Math.min(mx,42))}
+ const R=[],mg=[];let n=0;
+ const row=(cells,ht)=>{n++;R.push(`<row r="${n}" ht="${ht}" customHeight="1">${cells.map((c,i)=>`<c r="${cl(i)}${n}" s="${c.s}" t="inlineStr"><is><t xml:space="preserve">${xe(c.v)}</t></is></c>`).join('')}</row>`);return n};
+ bl.forEach((b,k)=>{const nc=b.head.length,fw=W.slice(0,nc).reduce((a,c)=>a+c,0);
+  let r=row([{v:b.title,s:1}],Math.max(28,nln(b.title,fw)*20+8));mg.push(`A${r}:${cl(nc-1)}${r}`);
+  r=row([{v:b.sub,s:2}],Math.max(22,nln(b.sub,fw)*16+6));mg.push(`A${r}:${cl(nc-1)}${r}`);
+  row(b.head.map(h=>({v:h,s:3})),Math.max(24,Math.max(...b.head.map((h,i)=>nln(h,W[i])))*16+6));
+  b.rows.forEach(rw=>row(rw.map(c=>({v:c.v,s:c.q?4:c.na?6:5})),Math.min(409,Math.max(21,Math.max(...rw.map((c,i)=>nln(c.v,W[i])))*15+6))));
+  if(k<bl.length-1){R.push(`<row r="${++n}" ht="8" customHeight="1"/>`);R.push(`<row r="${++n}" ht="8" customHeight="1"/>`)}});
+ const sheet=XH+`<worksheet xmlns="${XNS}"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane xSplit="1" topLeftCell="B1" activePane="topRight" state="frozen"/><selection pane="topRight" activeCell="B1" sqref="B1"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${W.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w.toFixed(1)}" customWidth="1"/>`).join('')}</cols><sheetData>${R.join('')}</sheetData><mergeCells count="${mg.length}">${mg.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+ const RT='http://schemas.openxmlformats.org/officeDocument/2006/relationships',PK='http://schemas.openxmlformats.org/package/2006/relationships';
+ return zipStore([
+  {name:'[Content_Types].xml',text:XH+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+  {name:'_rels/.rels',text:XH+`<Relationships xmlns="${PK}"><Relationship Id="rId1" Type="${RT}/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+  {name:'xl/workbook.xml',text:XH+`<workbook xmlns="${XNS}" xmlns:r="${RT}"><sheets><sheet name="Census 2027" sheetId="1" r:id="rId1"/></sheets></workbook>`},
+  {name:'xl/_rels/workbook.xml.rels',text:XH+`<Relationships xmlns="${PK}"><Relationship Id="rId1" Type="${RT}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${RT}/styles" Target="styles.xml"/></Relationships>`},
+  {name:'xl/styles.xml',text:XSTY},{name:'xl/worksheets/sheet1.xml',text:sheet}])}
+async function exportFile(hs,name,fmt){const bl=famBlocks(hs),blob=fmt==='csv'?new Blob([toCSV(bl)],{type:'text/csv;charset=utf-8'}):toXLSX(bl);
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name||('census2027_'+today+(fmt==='csv'?'.csv':'.xlsx'));a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
  const now=Date.now();await Promise.all(hs.map(h=>{h.exp=now;return put(h)}));R()}
 /* ---------- actions ---------- */
 const P=async()=>{if(!V.dirty)return;V.dirty=0;const{h,m}=V;if(!h.members.includes(m))h.members.push(m);h.ts=Date.now();await put(h)};
@@ -331,8 +369,8 @@ const A={home(){V={v:'home'};R()},
   if(d.cfg){if(!cfg.enu&&d.cfg.enu)cfg.enu=d.cfg.enu;cfg.ebs=[...new Set([...cfg.ebs,...(d.cfg.ebs||[]),...d.families.map(h=>h.eb).filter(Boolean)])];saveCfg()}
   alert(t('Restored|वापस लाया गया')+': '+add+' '+t('new|नए')+', '+upd+' '+t('updated|अद्यतन')+', '+keep+' '+t('unchanged|जस के तस'));V={v:'home'};R()};r.readAsText(f)},
  async delMem(i){if(confirm(t('Move this member to Trash?|इस सदस्य को कचरा पेटी में भेजें?')+'\n\n'+mname(V.h.members[i]))){await trashM(V.h,i);R()}},
- expOne(id){const h=(V.h&&V.h.id===id&&V.h)||HH.find(x=>x.id===id);if(!h)return;const hd=h.members.find(m=>m.h);exportCSV([h],('census2027_'+(hn(h)||'house')+'_'+(hd?mname(hd):'family')).replace(/[^\w\u0900-\u097F-]+/g,'_')+'_'+today+'.csv')},
- exp:exportCSV};
+ expOne(id){const h=(V.h&&V.h.id===id&&V.h)||HH.find(x=>x.id===id);if(!h)return;const hd=h.members.find(m=>m.h);exportFile([h],('census2027_'+(hn(h)||'house')+'_'+(hd?mname(hd):'family')).replace(/[^\w\u0900-\u097F-]+/g,'_')+'_'+today+'.xlsx','xlsx')},
+ exp:(hs,n)=>exportFile(hs,n,'xlsx'),expCsv:(hs,n)=>exportFile(hs,n,'csv')};
 const M=$('#m');
 M.addEventListener('click',async e=>{const tb=e.target.closest('[data-ebt]');if(tb){ebTab=tb.dataset.ebt;R();return}const b=e.target.closest('[data-eb]');if(b){V.h.eb=V.h.eb===b.dataset.eb?'':b.dataset.eb;R();return}const c=e.target.closest('.chip');if(!c||!['mem','det'].includes(V.v))return;const a=V.m.a,k=c.dataset.k,o=a[k];if(k==='q2'&&V.m.h)return;a[k]=o===c.dataset.v?'':c.dataset.v;if(a[k]!==o)a[k+'_x']='';V.dirty=1;if(V.v==='det')await P();R()});
 M.addEventListener('change',async e=>{const el=e.target;
