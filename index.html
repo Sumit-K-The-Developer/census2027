@@ -13,7 +13,9 @@ body{margin:0;font:17px/1.45 "Segoe UI","Nirmala UI",system-ui,sans-serif;backgr
 header{background:var(--b);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;border-bottom:4px solid var(--s)}
 header h1{font-size:19px;margin:0;flex:1;cursor:pointer;line-height:1.25}
 header h1 small{display:block;font-size:13px;font-weight:400;opacity:.9}
-.hb{background:#ffffff22;color:#fff;border:1px solid #fff7;border-radius:8px;min-height:44px;padding:0 14px;cursor:pointer;font:inherit}
+.hb{background:#ffffff22;color:#fff;border:1px solid #fff7;border-radius:8px;min-height:38px;padding:0 12px;cursor:pointer;font:inherit;font-size:15px}
+.hb.p{background:#fff;color:var(--b);border-color:#fff;font-weight:600}.hb.d{border-color:#ffb4a8;color:#ffd9d3}.hb:disabled{opacity:.4}
+.hx{display:flex;gap:6px;flex-wrap:wrap}header{flex-wrap:wrap}header h1{min-width:170px}
 main{max-width:1100px;margin:0 auto;padding:16px}
 .card{background:#fff;border:1px solid var(--l);border-radius:10px;padding:16px;margin-bottom:14px}
 button,select,input,textarea{font:inherit}
@@ -40,7 +42,7 @@ table{width:100%;border-collapse:collapse}
 td{padding:9px 10px;border-bottom:1px solid var(--l);vertical-align:top}
 td:first-child{width:44px;color:var(--b2);font-weight:700}td:nth-child(2){width:46%}
 td.a{font-weight:600}td.n{color:var(--m);font-style:italic}
-details{margin-bottom:14px}summary{cursor:pointer;font-weight:700;font-size:18px;padding:12px 16px;background:#e3eaf7;border-radius:8px;min-height:48px}
+details{margin-bottom:14px}summary{display:block;list-style:none;cursor:pointer;font-weight:700;font-size:18px;padding:12px 16px;background:#e3eaf7;border-radius:8px;min-height:48px}
 .tag{background:var(--s);color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;margin-left:8px}
 .hl{cursor:pointer}.hl:hover{border-color:var(--b2)}
 .muted{color:var(--m)}
@@ -59,9 +61,13 @@ details{margin-bottom:14px}summary{cursor:pointer;font-weight:700;font-size:18px
 .rt th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--l);color:var(--m);font-weight:600}.rt td:nth-child(2){width:auto}
 .chk{display:flex;align-items:center;gap:10px;min-height:44px;margin-top:8px;cursor:pointer}.chk input{width:24px;height:24px;flex:none}
 .tab b.ok{color:var(--ok)}.tab.on b.ok{color:#a5f0cf}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-weight:400;font-size:15px}
+.pill{background:#fff;border:1px solid var(--l);border-radius:14px;padding:2px 10px;color:var(--t)}
+summary::-webkit-details-marker{display:none}summary::before{content:'▸ ';color:var(--b2)}details[open]>summary::before{content:'▾ '}
+.q{position:relative}.q.key .ql{padding-right:22px}.kd{position:absolute;top:14px;right:6px;width:10px;height:10px;border-radius:50%;background:#1fa463}
 </style></head>
 <body>
-<header><h1 id="ti" onclick="A.home()"></h1><button class="hb" id="ins" hidden></button><button class="hb" id="st" onclick="A.cfg()"></button><button class="hb" id="lg"></button></header>
+<header><h1 id="ti" onclick="A.home()"></h1><div class="hx" id="hx"></div><button class="hb" id="ins" hidden></button><button class="hb" id="st" onclick="A.cfg()"></button><button class="hb" id="lg"></button></header>
 <main id="m"></main>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -71,9 +77,10 @@ const O=s=>s.split(',').map(x=>{const p=x.split('|');return{v:p[0],h:lang==='hi'
 const today=new Date().toISOString().slice(0,10),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 let cfg={};try{cfg=JSON.parse(localStorage.getItem('cfg')||'{}')}catch(e){}cfg.ebs=cfg.ebs||[];const saveCfg=()=>localStorage.setItem('cfg',JSON.stringify(cfg));
 /* ---------- storage (IndexedDB) ---------- */
-const dbp=new Promise((res,rej)=>{const r=indexedDB.open('census27',1);r.onupgradeneeded=()=>r.result.createObjectStore('hh',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-const tx=async(m,f)=>{const d=await dbp;return new Promise((res,rej)=>{const T=d.transaction('hh',m);const o=f(T.objectStore('hh'));T.oncomplete=()=>res(o&&o.result);T.onerror=()=>rej(T.error)})};
-const all=()=>tx('readonly',s=>s.getAll()),put=h=>tx('readwrite',s=>s.put(JSON.parse(JSON.stringify(h)))),del=id=>tx('readwrite',s=>s.delete(id));
+const dbp=new Promise((res,rej)=>{const r=indexedDB.open('census27',2);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains('hh'))db.createObjectStore('hh',{keyPath:'id'});if(!db.objectStoreNames.contains('trash'))db.createObjectStore('trash',{keyPath:'tid'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const tx=async(m,f,st)=>{st=st||'hh';const d=await dbp;return new Promise((res,rej)=>{const T=d.transaction(st,m);const o=f(T.objectStore(st));T.oncomplete=()=>res(o&&o.result);T.onerror=()=>rej(T.error)})};
+const all=()=>tx('readonly',s=>s.getAll()),put=h=>tx('readwrite',s=>s.put(JSON.parse(JSON.stringify(h)))),del=id=>tx('readwrite',s=>s.delete(id)),
+tall=()=>tx('readonly',s=>s.getAll(),'trash'),tput=o=>tx('readwrite',s=>s.put(JSON.parse(JSON.stringify(o))),'trash'),tdel=id=>tx('readwrite',s=>s.delete(id),'trash');
 /* ---------- the 40 questions ---------- */
 const YN='Yes|हाँ,No|नहीं',
 GR=['Basic details (Q1–5)|मूल विवरण (प्र. 1–5)','Marriage & nationality|विवाह एवं राष्ट्रीयता','Religion, family & health|धर्म, परिवार एवं स्वास्थ्य','Literacy & education|साक्षरता एवं शिक्षा','Work|कार्य एवं आर्थिक गतिविधि','Birth place & migration|जन्म स्थान एवं प्रवास','Children & vaccination|संतान एवं टीकाकरण','Banks & documents|बैंक एवं दस्तावेज़'],
@@ -121,10 +128,10 @@ q(27,'Where did you live before this?|इससे पहले आप कहा
 q(28,'What was the main reason for coming to the present place?|वर्तमान स्थान पर आने का मुख्य कारण क्या था?',5,['q28','s',MIG]);
 q(29,'Since how long have you been living in the present village/town after your last migration?|आप वर्तमान गाँव/शहर में पिछले प्रवास के बाद से कितने समय से रह रहे हैं?',5,['q29','dg','','Years|वर्ष','',3]);
 q(30,'What is your permanent residential address? (State, District, Village/Town)|आपका स्थायी आवासीय पता क्या है? (राज्य, जिला, गाँव/शहर)',5,...PL('q30'));
-q(31,'How many children are currently alive? (Only for women of the specified marital category)|वर्तमान में जीवित बच्चों की संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',6,['q31','dg','','','',2]);
-q(32,'Total number of children born alive? (Only for women of the specified marital category)|जीवित जन्मे बच्चों की कुल संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',6,['q32','dg','','','',2]);
-q(33,'Number of children born alive in the last one year? (Only for women of the specified marital category)|पिछले एक वर्ष में जीवित जन्मे बच्चों की संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',6,['q33','dg','','','',2]);
-q(34,'Where did you get the COVID-19 vaccination?|आपने कोविड-19 का टीकाकरण कहाँ करवाया था?',6,['q34','s',VAC]);
+q(31,'How many children are currently alive? (Only for women of the specified marital category)|वर्तमान में जीवित बच्चों की संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',6,['q31m','dg','','Sons|पुत्र','',2],['q31f','dg','','Daughters|पुत्रियाँ','',2]);
+q(32,'Total number of children born alive? (Only for women of the specified marital category)|जीवित जन्मे बच्चों की कुल संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',6,['q32m','dg','','Sons|पुत्र','',2],['q32f','dg','','Daughters|पुत्रियाँ','',2]);
+q(33,'Number of children born alive in the last one year? (Only for women of the specified marital category)|पिछले एक वर्ष में जीवित जन्मे बच्चों की संख्या कितनी है? (यह प्रश्न केवल निर्धारित वैवाहिक श्रेणी की महिलाओं के लिए)',6,['q33m','dg','','Sons|पुत्र','',2],['q33f','dg','','Daughters|पुत्रियाँ','',2]);
+q(34,'Where did you get the COVID-19 vaccination?|आपने कोविड-19 का टीकाकरण कहाँ करवाया था?',6,['q34','s',VAC,'Type of centre|केंद्र का प्रकार'],...PL('q34'));
 q(35,'How many bank accounts do you have in total?|आपके कुल कितने बैंक खाते हैं?',7,['q35','dg','','','',2]);
 q(36,'What is your mobile number? (if available)|आपका मोबाइल नंबर क्या है? (यदि उपलब्ध हो)',7,...HAS('q36','Mobile number|मोबाइल नंबर',10));
 q(37,'What is your Aadhaar number? (if available)|आपका आधार नंबर क्या है? (यदि उपलब्ध हो)',7,...HAS('q37','Aadhaar number|आधार नंबर',12));
@@ -148,7 +155,7 @@ q21:['Agriculture','Education','Retail trade','Construction','Transport','Manufa
 q22:{'Regular salaried':['Government','Private company','Bank','School / college','Hospital','Army / police'],'Casual labour':['Construction','Agriculture','Brick kiln','Loading / unloading'],'Self-employed':['Shop','Farming','Repair work','Transport']},
 q23:{Student:['Primary','Middle','Secondary','Higher secondary','College'],Other:['Unable to work (disability)','Unable to work (illness)','Beggar','Rent / interest income']},
 q25:['Government bus','Private bus','Tempo / auto','E-rickshaw','Tractor','Boat','Animal cart'],
-q26s:STATES,q27s:STATES,q30s:STATES,
+q26s:STATES,q27s:STATES,q30s:STATES,q34s:STATES,
 q28:['Natural calamity','Transfer of job','Better opportunities','Marriage of a family member','Displacement','Health reasons'],
 q34:{'Government facility':['Sub-centre','PHC','CHC','District hospital','Vaccination camp'],'Private facility':['Private hospital','Private clinic'],'Not vaccinated':['Medical reason','Not eligible','Fear / hesitancy','Not available'],Other:['Workplace camp','School camp']}};
 const NOD={q2:['Head','Wife','Husband','Son','Daughter','Father','Mother','Brother','Sister','Son-in-law','Daughter-in-law','Grandchild'],q3:['Male','Female'],q5:['Unmarried','Married'],q8:['Indian'],q13h:1,q17a:1,q19:1,q36h:1,q37h:1,q38h:1,q39h:1,q40h:1};
@@ -169,26 +176,29 @@ const NA=(n,a)=>{const ev=a.q5&&a.q5!=='Unmarried',w=a.q18==='Yes'||WK.includes(
 const age=d=>{const b=new Date(d),n=new Date();let y=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))y--;return Math.max(y,0)};
 const dmy=v=>/^\d{4}-\d\d-\d\d$/.test(v)?v.split('-').reverse().join('-'):v;
 const disp=(f,v)=>{if(!v)return'';const o=f[1]==='yn'?YN:f[1]==='s'?f[2]:null;if(o){const x=O(o).find(y=>y.v===v);return x?x.h:v}return f[1]==='d'?dmy(v):v};
-const show=(x,a)=>x.f.filter(f=>!f[4]||a[f[4]]==='Yes').map(f=>{let v=disp(f,a[f[0]]);if(v&&a[f[0]+'_x'])v+=' ('+a[f[0]+'_x']+')';return v&&x.f.length>1&&f[3]?t(f[3])+': '+v:v}).filter(Boolean).join('  |  ');
+const vf=(x,a)=>x.n===34&&a.q34==='Not vaccinated'?x.f.slice(0,1):x.f;
+const show=(x,a)=>{let r=vf(x,a).filter(f=>!f[4]||a[f[4]]==='Yes').map(f=>{let v=disp(f,a[f[0]]);if(v&&a[f[0]+'_x'])v+=' ('+a[f[0]+'_x']+')';return v&&x.f.length>1&&f[3]?t(f[3])+': '+v:v}).filter(Boolean).join('  |  ');
+ if(x.n>=31&&x.n<=33){const k='q'+x.n,tot=(+a[k+'m']||0)+(+a[k+'f']||0);if(r&&(a[k+'m']||a[k+'f']))r+='  |  '+t('Total|कुल')+': '+tot;else if(!r&&a[k])r=a[k]+' ('+t('total, entered earlier|कुल, पहले दर्ज')+')'}
+ return r};
 /* ---------- state ---------- */
-let V={v:'home'},HH=[],filt='',ebTab='';
+let V={v:'home'},HH=[],TR=[],filt='',ebTab='';
 const mname=m=>m.a.q1||t('(no name)|(नाम नहीं)');
-async function R(){HH=await all();HH.sort((a,b)=>b.ts-a.ts);
+async function R(){HH=await all();TR=await tall();HH.sort((a,b)=>b.ts-a.ts);
  if(!cfg.enu)V={v:'cfg'};
- $('#ti').innerHTML=esc(t('Census of India 2027|भारत की जनगणना 2027'))+(cfg.enu?`<small>${esc(t('Enumerator|गणनाकार'))}: ${esc(cfg.enu)}${cfg.ebs.length?' · EB: '+esc(cfg.ebs.join(', ')):''}</small>`:'');$('#lg').textContent=lang==='en'?'हिंदी':'English';$('#st').textContent='⚙ '+t('Setup|सेटअप');
- $('#m').innerHTML=V.v==='cfg'?cfgV():V.v==='home'?homeV():V.v==='hhf'?hhfV():V.v==='hh'?hhV():V.v==='ros'?rosV():V.v==='det'?detV():memV();document.title='Census 2027'}
+ $('#ti').innerHTML=esc(t('Census of India 2027|भारत की जनगणना 2027'))+(cfg.enu?`<small>${esc(t('Enumerator|गणनाकार'))}: ${esc(cfg.enu)}${cfg.ebs.length?' · EB: '+esc(cfg.ebs.join(', ')):''}</small>`:'');$('#lg').textContent=lang==='en'?'हिंदी':'English';$('#st').textContent='⚙ '+t('Setup|सेटअप');$('#hx').innerHTML=V.v==='hh'?hhActions():'';
+ $('#m').innerHTML=V.v==='cfg'?cfgV():V.v==='trash'?trashV():V.v==='home'?homeV():V.v==='hhf'?hhfV():V.v==='hh'?hhV():V.v==='ros'?rosV():V.v==='det'?detV():memV();document.title='Census 2027'}
 /* ---------- views ---------- */
 const hn=h=>h.hno||h.no||'';
 const addrOf=h=>[h.addr,(h.ha||{}).v,(h.ha||{}).d,(h.ha||{}).s].filter(Boolean).join(', '),
 famsOf=()=>ebTab===''?HH:HH.filter(h=>(h.eb||'-')===ebTab);
 function homeV(){const L=famsOf(),ms=L.flatMap(h=>h.members),ebs=[...new Set([...cfg.ebs,...HH.map(h=>h.eb).filter(Boolean)])];if(HH.some(h=>!h.eb))ebs.push('-');
  const tb=(v,l)=>`<button class="tab${ebTab===v?' on':''}" data-ebt="${esc(v)}">${l}</button>`,en=e=>e==='-'?t('No EB|EB नहीं'):'EB '+esc(e);
- return`<div class="tabs">${tb('',t('All EBs|सभी EB')+' ('+HH.length+')')}${ebs.map(e=>tb(e,en(e)+' ('+HH.filter(h=>(h.eb||'-')===e).length+')')).join('')}</div>
+ return`${bkBanner()}<div class="tabs">${tb('',t('All EBs|सभी EB')+' ('+HH.length+')')}${ebs.map(e=>tb(e,en(e)+' ('+HH.filter(h=>(h.eb||'-')===e).length+')')).join('')}</div>
 <div class="card stats"><div class="stat"><b>${L.length}</b>${t('Families|परिवार')}</div><div class="stat"><b>${ms.length}</b>${t('Persons|व्यक्ति')}</div><div class="stat"><b>${ms.filter(m=>m.a.q3==='Male').length}</b>${t('Male|पुरुष')}</div><div class="stat"><b>${ms.filter(m=>m.a.q3==='Female').length}</b>${t('Female|महिला')}</div></div>
-<div class="row" style="margin-bottom:14px"><button class="btn p" onclick="A.addFam()">+ ${t('Add family|परिवार जोड़ें')}</button><input type="search" style="flex:1;min-width:200px;width:auto" placeholder="${t('Search house, building, EB, address or head name|मकान, भवन, EB, पता या मुखिया का नाम खोजें')}" value="${esc(filt)}" oninput="filt=this.value;$('#lst').innerHTML=lst()"><button class="btn" onclick="A.exp(famsOf())" ${L.length?'':'disabled'}>${t('Export CSV|CSV निर्यात')} – ${ebTab?en(ebTab):t('all|सभी')}</button></div><div id="lst">${lst()}</div>`}
+<div class="row" style="margin-bottom:14px"><button class="btn p" onclick="A.addFam()">+ ${t('Add family|परिवार जोड़ें')}</button><input type="search" style="flex:1;min-width:200px;width:auto" placeholder="${t('Search house, building, EB, address or head name|मकान, भवन, EB, पता या मुखिया का नाम खोजें')}" value="${esc(filt)}" oninput="filt=this.value;$('#lst').innerHTML=lst()"><button class="btn" onclick="A.exp(famsOf())" ${L.length?'':'disabled'}>${t('Export CSV|CSV निर्यात')} – ${ebTab?en(ebTab):t('all|सभी')}</button></div><div class="row" style="margin-bottom:14px"><button class="btn" onclick="A.backup()">⬇ ${t('Backup (file)|बैकअप (फ़ाइल)')}</button><button class="btn" onclick="$('#rf').click()">⬆ ${t('Restore from backup|बैकअप से वापस लाएँ')}</button><button class="btn" onclick="A.trash()">🗑 ${t('Trash|कचरा पेटी')} (${TR.length})</button><input type="file" id="rf" accept=".json,application/json" hidden></div><div id="lst">${lst()}</div>`}
 function lst(){const f=filt.trim().toLowerCase(),L=famsOf().filter(h=>!f||[h.no,h.hno,h.bno,h.eb,addrOf(h),...h.members.map(m=>m.a.q1)].join(' ').toLowerCase().includes(f));
  if(!L.length)return`<div class="card muted">${HH.length?t('No family matches.|कोई परिवार नहीं मिला।'):t('No families yet. Tap “Add family” to begin.|अभी कोई परिवार नहीं है। शुरू करने के लिए “परिवार जोड़ें” दबाएँ।')}</div>`;
- return L.map(h=>{const hd=h.members.find(m=>m.h),p=fprog(h);return`<div class="card hl" onclick="A.open('${h.id}')"><b>${esc(hd?mname(hd):t('(head not added)|(मुखिया नहीं जोड़ा)'))}</b> <span class="muted">· ${h.members.length} ${t('members|सदस्य')} · ${dmy(h.date)}</span><div style="margin-top:4px"><b>${t('House No.|मकान सं.')}</b> ${esc(hn(h)||'—')} &nbsp; <b>${t('Building No.|भवन सं.')}</b> ${esc(h.bno||'—')} &nbsp; <b>EB</b> ${esc(h.eb||'—')}</div><div class="muted">${esc(addrOf(h))}</div>${p[1]?`<div class="row" style="margin-top:6px"><div class="mini sp"><div style="width:${pc(p[0],p[1])}%"></div></div><span class="muted" style="font-size:14px">${pc(p[0],p[1])}%</span></div>`:''}</div>`}).join('')}
+ return L.map(h=>{const hd=h.members.find(m=>m.h),p=fprog(h);return`<div class="card hl" onclick="A.open('${h.id}')"><b>${esc(hd?mname(hd):t('(head not added)|(मुखिया नहीं जोड़ा)'))}</b> <span class="muted">· ${h.members.length} ${t('members|सदस्य')} · ${dmy(h.date)}</span><div style="margin-top:4px"><b>${t('House No.|मकान सं.')}</b> ${esc(hn(h)||'—')} &nbsp; <b>${t('Building No.|भवन सं.')}</b> ${esc(h.bno||'—')} &nbsp; <b>EB</b> ${esc(h.eb||'—')}</div><div class="muted">${esc(addrOf(h))}</div>${p[1]?`<div class="row" style="margin-top:6px"><div class="mini sp"><div style="width:${pc(p[0],p[1])}%"></div></div><span class="muted" style="font-size:14px">${pc(p[0],p[1])}%</span></div>`:''}<div class="row" style="margin-top:8px" onclick="event.stopPropagation()"><button class="btn" style="min-height:40px;padding:0 14px" onclick="A.expOne('${h.id}')">⬇ ${t('Export|निर्यात')}</button><label class="chk" style="margin:0"><input type="checkbox" data-expd="${h.id}" ${h.exp&&h.exp>=h.ts?'checked':''}> ${t('Exported|निर्यात हो गया')}</label>${h.exp&&h.exp<h.ts?`<span class="muted" style="font-size:14px">${t('changed after export|निर्यात के बाद बदला')}</span>`:''}</div></div>`}).join('')}
 function cfgV(){return`<div class="card"><h2 style="margin-top:0">${t('Enumerator setup|गणनाकार सेटअप')}</h2><p class="muted">${t('Saved once on this device and shown in the title. An enumerator may have more than one EB.|एक बार सहेजें; यह शीर्षक में दिखेगा। एक गणनाकार के एक से अधिक EB हो सकते हैं।')}</p><div class="grid"><div><div class="sub">${t('Enumerator name|गणनाकार का नाम')}</div><input type="text" id="c_enu" value="${esc(cfg.enu||'')}"></div><div><div class="sub">${t('EB numbers (separate with commas)|EB संख्या (अल्पविराम से अलग करें)')}</div><input type="text" id="c_eb" value="${esc(cfg.ebs.join(', '))}"></div></div><div class="row" style="margin-top:14px">${cfg.enu?`<button class="btn" onclick="A.home()">${t('Cancel|रद्द करें')}</button>`:''}<button class="btn p" onclick="A.saveCfg()">${t('Save|सहेजें')}</button></div></div>`}
 function hhfV(){const h=V.h,E=cfg.ebs,nw=h.newEB||!E.length;return`<div class="card"><h2 style="margin-top:0">${t('Family details|परिवार का विवरण')}</h2>
 <div class="sub">${t('House / household number|मकान / परिवार संख्या')}</div><input type="text" data-h="hno" value="${esc(hn(h))}" autofocus>
@@ -199,10 +209,18 @@ ${E.length?`<label class="chk"><input type="checkbox" data-neweb="1" ${h.newEB?'
 <div><div class="sub">${t('Date|दिनांक')}</div><input type="date" data-h="date" value="${esc(h.date)}"></div></div>
 <p class="muted" style="margin-bottom:0">${t("The head's address is taken together with the head's basic details in the next step.|मुखिया का पता अगले चरण में मुखिया के मूल विवरण के साथ लिया जाएगा।")}</p>
 <div class="row" style="margin-top:14px"><button class="btn" onclick="${h.isNew?'A.home()':`A.open('${h.id}')`}">${t('Cancel|रद्द करें')}</button><button class="btn p" onclick="A.saveHH()">${h.members.length?t('Save|सहेजें'):t('Save & add family head|सहेजें और मुखिया जोड़ें')}</button></div></div>`}
-function hhV(){const h=V.h;return`<div class="row" style="margin-bottom:14px"><button class="btn" onclick="A.home()">← ${t('All families|सभी परिवार')}</button><span class="sp"></span><button class="btn" onclick="A.ros()" ${h.members.length?'':'disabled'}>${t('Members list|सदस्य सूची')}</button><button class="btn p" onclick="A.det(0)" ${h.members.length?'':'disabled'}>${t('Detailed entry|विस्तृत प्रविष्टि')}</button><button class="btn" onclick="A.editHH()">${t('Edit details|विवरण बदलें')}</button><button class="btn" onclick="A.exp([V.h])">${t('Export (CSV)|निर्यात (CSV)')}</button><button class="btn d" onclick="A.delHH()">${t('Delete family|परिवार हटाएँ')}</button></div>
-<div class="card"><h2 style="margin:0 0 6px">${t('House No.|मकान सं.')} ${esc(hn(h)||'—')} · ${t('Building No.|भवन सं.')} ${esc(h.bno||'—')} · EB ${esc(h.eb||'—')}</h2><div>${esc(addrOf(h))||'—'}</div><div class="muted">${t('Enumerator|गणनाकार')}: ${esc(cfg.enu)} · ${t('Date|दिनांक')}: ${dmy(h.date)}</div></div>
-${h.members.map((m,i)=>`<details ${i?'':'open'}><summary>${i+1}. ${esc(mname(m))}${m.h?`<span class="tag">${t('Head|मुखिया')}</span>`:''}<span class="muted" style="font-weight:400"> · ${disp(['','s','Male|पुरुष,Female|महिला,Other|अन्य'],m.a.q3)} ${m.a.q4a?', '+m.a.q4a+' '+t('yrs|वर्ष'):''}</span></summary><div class="card" style="margin-top:8px"><div class="row" style="margin-bottom:8px"><button class="btn" onclick="A.editMem(${i})">${t('Edit|बदलें')}</button>${m.h&&h.members.length>1?'':`<button class="btn d" onclick="A.delMem(${i})">${t('Delete|हटाएँ')}</button>`}</div><table>${Q.map(x=>{const na=NA(x.n,m.a);return`<tr><td>${x.n}</td><td>${esc(t(x.t))}</td><td class="${na?'n':'a'}">${na?t('Not applicable|लागू नहीं'):esc(show(x,m.a))||'—'}</td></tr>`}).join('')}</table></div></details>`).join('')}
-<button class="btn p" onclick="A.newMem(V.h)">+ ${h.members.length?t('Add member|सदस्य जोड़ें'):t('Add family head|मुखिया जोड़ें')}</button>`}
+const KEYQ=[1,2,3,4,5,10,17,20,36,37];
+const keyInfo=m=>{const a=m.a,fv=(n,k)=>{const x=Q.find(q=>q.n===n),f=x.f.find(f=>f[0]===k);return disp(f,a[k])},
+ P=(v,l)=>v?`<span class="pill" title="${esc(t(l))}">${esc(v)}</span>`:'',
+ dob=a.q4d?dmy(a.q4d)+' ('+age(a.q4d)+')':a.q4a?a.q4a+' '+t('yrs|वर्ष'):'',
+ cs=fv(10,'q10')?fv(10,'q10')+(a.q10_x?' ('+a.q10_x+')':''):'',
+ ql=NA(17,a)?'':(fv(17,'q17a')?fv(17,'q17a')+(a.q17b?' – '+a.q17b:''):''),
+ ad=a.q37?String(a.q37).replace(/(\d{4})(?=\d)/g,'$1 '):'';
+ return P(fv(3,'q3'),'Sex|लिंग')+P(dob,'Date of birth (age)|जन्मतिथि (आयु)')+(m.h?'':P(fv(2,'q2'),'Relation with head|मुखिया से संबंध'))+P(fv(5,'q5'),'Marital status|वैवाहिक स्थिति')+P(cs,'Caste|जाति')+P(ql,'Qualification|योग्यता')+P(NA(20,a)?'':a.q20,'Occupation|व्यवसाय')+P(ad,'Aadhaar|आधार')+P(a.q36,'Mobile|मोबाइल')};
+const hhActions=()=>{const h=V.h,n=h.members.length;return`<button class="hb" onclick="A.home()">← ${t('Families|परिवार')}</button><button class="hb" onclick="A.ros()" ${n?'':'disabled'}>${t('Members|सदस्य')}</button><button class="hb p" onclick="A.det(0)" ${n?'':'disabled'}>${t('Detailed entry|विस्तृत प्रविष्टि')}</button><button class="hb" onclick="A.newMem(V.h)">+ ${n?t('Member|सदस्य'):t('Head|मुखिया')}</button><button class="hb" onclick="A.editHH()">${t('Edit|बदलें')}</button><button class="hb" onclick="A.expOne(V.h.id)">${t('Export|निर्यात')}</button><button class="hb d" onclick="A.delHH()">${t('Delete|हटाएँ')}</button>`};
+function hhV(){const h=V.h;return`<div class="card"><h2 style="margin:0 0 6px">${t('House No.|मकान सं.')} ${esc(hn(h)||'—')} · ${t('Building No.|भवन सं.')} ${esc(h.bno||'—')} · EB ${esc(h.eb||'—')}</h2><div>${esc(addrOf(h))||'—'}</div><div class="muted">${t('Enumerator|गणनाकार')}: ${esc(cfg.enu)} · ${t('Date|दिनांक')}: ${dmy(h.date)}</div></div>
+${h.members.map((m,i)=>`<details><summary><div>${i+1}. ${esc(mname(m))}${m.h?`<span class="tag">${t('Head|मुखिया')}</span>`:''}</div><div class="pills">${keyInfo(m)}</div></summary><div class="card" style="margin-top:8px"><div class="row" style="margin-bottom:8px"><button class="btn" onclick="A.editMem(${i})">${t('Edit|बदलें')}</button>${m.h&&h.members.length>1?'':`<button class="btn d" onclick="A.delMem(${i})">${t('Delete|हटाएँ')}</button>`}</div><table>${Q.map(x=>{const na=NA(x.n,m.a);return`<tr><td>${x.n}</td><td>${esc(t(x.t))}</td><td class="${na?'n':'a'}">${na?t('Not applicable|लागू नहीं'):esc(show(x,m.a))||'—'}</td></tr>`}).join('')}</table></div></details>`).join('')}
+`}
 const cand=(k,m,h)=>{const a=m.a,ag=+a.q4a||0,fm=x=>x==='Male'||x==='Female';
  return h.members.filter(x=>{if(x===m||!x.a.q1)return false;const sx=x.a.q3,xa=+x.a.q4a||0;
   if(k==='q7')return x.a.q5!=='Unmarried'&&!(fm(a.q3)&&fm(sx)&&a.q3===sx)&&!(a.q5&&x.a.q5&&(a.q5==='Married')!==(x.a.q5==='Married'));
@@ -217,24 +235,25 @@ function fld(f,a,hd){const[k,ty,o,lb,cd,mx]=f;if(cd&&a[cd]!=='Yes')return'';cons
  if((ty==='yn'||ty==='s')&&detOn(k,v))dv=`<div class="sub" style="margin-top:8px">${t('Details / specify (optional)|विवरण / स्पष्ट करें (वैकल्पिक)')}</div><input type="text" data-k="${k}_x" list="d_${k}" maxlength="60" value="${esc(a[k+'_x']||'')}">${dl(k,sug(k,v))}`;
  return`<div>${sub}${h}${dv}</div>`}
 const pc=(d,n)=>n?Math.round(d*100/n):0,
-prog=(m,g)=>{let d=0,n=0;Q.forEach(x=>{if((g===undefined||x.g===g)&&!NA(x.n,m.a)){n++;if(x.f.some(f=>m.a[f[0]]))d++}});return[d,n]},
+ans=(x,a)=>x.f.some(f=>a[f[0]])||!!a['q'+x.n],
+prog=(m,g)=>{let d=0,n=0;Q.forEach(x=>{if((g===undefined||x.g===g)&&!NA(x.n,m.a)){n++;if(ans(x,m.a))d++}});return[d,n]},
 fprog=h=>h.members.reduce((r,m)=>{const p=prog(m);return[r[0]+p[0],r[1]+p[1]]},[0,0]),
 bar=(d,n,c)=>`<div class="${c||'bar'}"><div style="width:${pc(d,n)}%"></div></div>`,
 wr=(x,a)=>{const m=[];
  if(x.n==6&&a.q6&&a.q4a&&+a.q6>+a.q4a)m.push('Age at marriage is more than current age.|विवाह के समय की आयु वर्तमान आयु से अधिक है।');
- if(x.n==32&&a.q31&&a.q32&&+a.q31>+a.q32)m.push('Living children cannot exceed total born alive.|जीवित बच्चे, कुल जन्मे बच्चों से अधिक नहीं हो सकते।');
- if(x.n==33&&a.q33&&a.q32&&+a.q33>+a.q32)m.push('Births in the last year cannot exceed total born alive.|पिछले वर्ष के जन्म, कुल जन्मे बच्चों से अधिक नहीं हो सकते।');
+ if(x.n==32&&((a.q31m&&a.q32m&&+a.q31m>+a.q32m)||(a.q31f&&a.q32f&&+a.q31f>+a.q32f)))m.push('Living sons/daughters cannot exceed the number born alive.|जीवित पुत्र/पुत्रियाँ, जन्मे पुत्र/पुत्रियों से अधिक नहीं हो सकते।');
+ if(x.n==33&&((a.q33m&&a.q32m&&+a.q33m>+a.q32m)||(a.q33f&&a.q32f&&+a.q33f>+a.q32f)))m.push('Births in the last year cannot exceed the number born alive.|पिछले वर्ष के जन्म, कुल जन्मे बच्चों से अधिक नहीं हो सकते।');
  if(x.n==36&&a.q36&&a.q36.length!==10)m.push('Mobile number should have 10 digits.|मोबाइल नंबर 10 अंकों का होना चाहिए।');
  if(x.n==37&&a.q37&&a.q37.length!==12)m.push('Aadhaar number should have 12 digits.|आधार नंबर 12 अंकों का होना चाहिए।');
  return m.map(s=>`<div class="warn">⚠ ${esc(t(s))}</div>`).join('')},
-isEm=(x,a)=>!NA(x.n,a)&&!x.f.some(f=>a[f[0]]),
+isEm=(x,a)=>!NA(x.n,a)&&!ans(x,a),
 upd=()=>{if(V.m)Q.forEach(x=>{const e=$('#w'+x.n);if(e)e.innerHTML=wr(x,V.m.a);const q=$('#q'+x.n);if(q)q.classList.toggle('em',isEm(x,V.m.a))})},
 hasHA=h=>!!(h.ha&&(h.ha.s||h.ha.d||h.ha.v)),
-same=(x,m)=>[26,27,30].includes(x.n)?`<label class="chk"><input type="checkbox" data-same="q${x.n}" ${m.a['q'+x.n+'_same']?'checked':''} ${hasHA(V.h)?'':'disabled'}> ${t("Same as head's address|मुखिया के पते के समान")}${hasHA(V.h)?'':` <span class="muted">(${t("enter the head's address first|पहले मुखिया का पता भरें")})</span>`}</label>`:'',
-qs=(m,g)=>Q.filter(x=>x.g===g).map(x=>{const na=NA(x.n,m.a);return`<div class="q${isEm(x,m.a)?' em':''}" id="q${x.n}"><div class="ql"><i>${x.n}</i>${esc(t(x.t))}</div>${na?`<div class="na">${x.n==16||x.n==17?t('Enabled only when Q15 “Can read & write” is Yes|प्र. 15 में “पढ़-लिख सकते हैं” हाँ होने पर ही'):x.n>=27&&x.n<=29?t('Disabled because Q26 (birth place) is the same as the head’s address|प्र. 26 (जन्म स्थान) मुखिया के पते के समान होने से बंद'):t('Not applicable|लागू नहीं')}</div>`:(x.f.length>1?`<div class="grid">${x.f.map(f=>fld(f,m.a,m.h)).join('')}</div>`:fld(x.f[0],m.a,m.h))+same(x,m)}<div class="wn" id="w${x.n}">${wr(x,m.a)}</div></div>`}).join(''),
+same=(x,m)=>([26,27,30].includes(x.n)||(x.n===34&&m.a.q34!=='Not vaccinated'))?`<label class="chk"><input type="checkbox" data-same="q${x.n}" ${m.a['q'+x.n+'_same']?'checked':''} ${hasHA(V.h)?'':'disabled'}> ${t("Same as head's address|मुखिया के पते के समान")}${hasHA(V.h)?'':` <span class="muted">(${t("enter the head's address first|पहले मुखिया का पता भरें")})</span>`}</label>`:'',
+qs=(m,g)=>Q.filter(x=>x.g===g).map(x=>{const na=NA(x.n,m.a);return`<div class="q${isEm(x,m.a)?' em':''}${KEYQ.includes(x.n)?' key':''}" id="q${x.n}">${KEYQ.includes(x.n)?`<span class="kd" title="${esc(t('Shown in the family summary|परिवार सारांश में दिखता है'))}"></span>`:''}<div class="ql"><i>${x.n}</i>${esc(t(x.t))}</div>${na?`<div class="na">${x.n==16||x.n==17?t('Enabled only when Q15 “Can read & write” is Yes|प्र. 15 में “पढ़-लिख सकते हैं” हाँ होने पर ही'):x.n>=27&&x.n<=29?t('Disabled because Q26 (birth place) is the same as the head’s address|प्र. 26 (जन्म स्थान) मुखिया के पते के समान होने से बंद'):t('Not applicable|लागू नहीं')}</div>`:(vf(x,m.a).length>1?`<div class="grid">${vf(x,m.a).map(f=>fld(f,m.a,m.h)).join('')}</div>`:fld(x.f[0],m.a,m.h))+same(x,m)}<div class="wn" id="w${x.n}">${wr(x,m.a)}</div></div>`}).join(''),
 haV=h=>{const ha=h.ha||{};return`<div class="card"><h3 style="margin:0 0 4px">${t("Head's address|मुखिया का पता")}</h3><div class="muted" style="font-size:14px;margin-bottom:6px">${t('Later address questions (Q26, Q27, Q30) of every member can copy this with one tick.|बाद के पता-प्रश्न (प्र. 26, 27, 30) एक टिक से इसे भर सकते हैं।')}</div><div class="sub">${t('Address line (house / locality)|पता (मकान / मोहल्ला)')}</div><input type="text" data-h="addr" value="${esc(h.addr||'')}"><div class="grid" style="margin-top:10px">${[['s','State|राज्य'],['d','District|जिला'],['v','Village / Town|गाँव / शहर']].map(c=>`<div><div class="sub">${t(c[1])}</div><input type="text" data-ha="${c[0]}" value="${esc(ha[c[0]]||'')}"${c[0]=='s'?' list="d_hs"':''}></div>`).join('')}</div>${dl('hs',STATES)}</div>`},
 nl=(h,m)=>`<datalist id="ml">${h.members.filter(x=>x!==m&&x.a.q1).map(x=>`<option value="${esc(x.a.q1)}">`).join('')}</datalist>`,
-legend=()=>`<div class="muted" style="font-size:14px;margin-top:8px"><span style="display:inline-block;width:14px;height:14px;border:1.5px solid #e6aaa5;border-radius:4px;vertical-align:-3px"></span> ${t('Red outline = not answered yet (counts in progress)|लाल किनारा = अभी उत्तर नहीं (प्रगति में गिना जाता है)')}</div>`;
+legend=()=>`<div class="muted" style="font-size:14px;margin-top:8px"><span style="display:inline-block;width:14px;height:14px;border:1.5px solid #e6aaa5;border-radius:4px;vertical-align:-3px"></span> ${t('Red outline = not answered yet (counts in progress)|लाल किनारा = अभी उत्तर नहीं (प्रगति में गिना जाता है)')} &nbsp;·&nbsp; <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1fa463;vertical-align:-1px"></span> ${t('Green dot = shown in the family summary|हरा बिंदु = परिवार सारांश में दिखता है')}</div>`;
 function prefill(h,m){const hd=h.members.find(x=>x.h);if(!hd||m===hd)return;let c=0;
  ['q9','q10'].forEach(b=>{if(m.a[b]===undefined&&hd.a[b]){m.a[b]=hd.a[b];c=1}if(m.a[b]&&m.a[b]===hd.a[b]&&m.a[b+'_x']===undefined&&hd.a[b+'_x']){m.a[b+'_x']=hd.a[b+'_x'];c=1}});
  ['q14a','q14b'].forEach(k=>{if(m.a[k]===undefined&&hd.a[k]){m.a[k]=hd.a[k];c=1}});if(c)V.dirty=1}
@@ -260,12 +279,26 @@ function detV(){const{h,mi,s}=V,m=h.members[mi];prefill(h,m);const fp=fprog(h),m
  return`<div class="lay">${side}<section>${nl(h,m)}<div class="card"><div class="row"><h2 style="margin:0">${esc(mname(m))}</h2>${m.h?`<span class="tag">${t('Head|मुखिया')}</span>`:''}<span class="sp"></span><span class="muted">${t('Member progress|सदस्य की प्रगति')}: ${pc(mp[0],mp[1])}% (${mp[0]}/${mp[1]})</span></div>${bar(mp[0],mp[1])}${legend()}</div>
 <div class="card"><h3 style="margin:0 0 4px">${esc(t(GR[s]))}</h3>${qs(m,s)}</div>${m.h&&s==0?haV(h):''}
 <div class="row"><button class="btn" ${mi==0&&s<=1?'disabled':''} onclick="A.go(-1)">← ${t('Previous|पिछला')}</button><span class="sp"></span><button class="btn p" onclick="A.go(1)">${nxt} →</button></div></section></div>`}
+/* ---------- trash & backup ---------- */
+const ago=ts=>{const m=Math.round((Date.now()-ts)/60000);return m<1?t('just now|अभी'):m<60?m+' '+t('min ago|मिनट पहले'):m<1440?Math.round(m/60)+' '+t('h ago|घंटे पहले'):Math.round(m/1440)+' '+t('days ago|दिन पहले')},
+stale=()=>HH.length&&(!cfg.lastBackup||HH.some(h=>h.ts>cfg.lastBackup)||TR.some(x=>x.ts>cfg.lastBackup)),
+bkBanner=()=>HH.length||TR.length?`<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;${stale()?'border-color:#e0a030;background:#fff8e8':''}"><span>${cfg.lastBackup?t('Last backup|पिछला बैकअप')+': '+ago(cfg.lastBackup):t('No backup yet|अभी तक कोई बैकअप नहीं')}${stale()?' · <b>'+t('new changes are not backed up|नए बदलावों का बैकअप नहीं है')+'</b>':''}</span><span class="sp"></span><button class="btn p" style="min-height:44px" onclick="A.backup()">${t('Back up now|अभी बैकअप लें')}</button></div>`:'',
+trashM=async(h,i)=>{const m=h.members[i];await tput({tid:uid(),type:'member',ts:Date.now(),label:mname(m),sub:'Family '+hn(h)+' · EB '+(h.eb||'—'),hhId:h.id,idx:i,data:m});h.members.splice(i,1);h.ts=Date.now();await put(h)};
+function trashV(){const L=[...TR].sort((a,b)=>b.ts-a.ts);
+ return`<div class="row"><button class="btn" onclick="A.home()">← ${t('Dashboard|डैशबोर्ड')}</button><h2 style="margin:0">${t('Trash|कचरा पेटी')}</h2></div>
+<p class="muted">${t('Deleted families and members stay here until you delete them permanently.|हटाए गए परिवार और सदस्य यहाँ तब तक रहते हैं जब तक आप उन्हें स्थायी रूप से न हटाएँ।')}</p>
+${L.length?L.map(x=>`<div class="card"><div class="row"><div class="sp"><b>${esc(x.label)}</b><span class="tag">${x.type==='family'?t('Family|परिवार'):t('Member|सदस्य')}</span><div class="muted">${esc(x.sub)} · ${t('deleted|हटाया')} ${ago(x.ts)}</div></div><button class="btn p" onclick="A.trashRestore('${x.tid}')">${t('Restore|वापस लाएँ')}</button><button class="btn d" onclick="A.trashDrop('${x.tid}')">${t('Delete forever|हमेशा के लिए हटाएँ')}</button></div></div>`).join(''):`<div class="card muted">${t('Trash is empty.|कचरा पेटी खाली है।')}</div>`}`}
 /* ---------- export ---------- */
-function exportCSV(hs){const E=s=>s.split('|')[0],cols=[];Q.forEach(x=>x.f.forEach(f=>{cols.push([x,f,0]);if(hasDet(f))cols.push([x,f,1])}));
- const head=['House / Household No','EB No','Building No','Address','Enumerator','Date','Member #','Family head',...cols.map(([x,f,d])=>`Q${x.n}. ${E(x.t)}`+(x.f.length>1?` - ${E(f[3]||f[0])}`:'')+(d?' (details)':''))];
- const rows=hs.flatMap(h=>h.members.map((m,i)=>[hn(h),h.eb,h.bno,addrOf(h),cfg.enu,h.date,i+1,m.h?'Yes':'No',...cols.map(([x,f,d])=>NA(x.n,m.a)?'N/A':f[4]&&m.a[f[4]]!=='Yes'?'':m.a[f[0]+(d?'_x':'')]||'')]));
- const c=[head,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""').replace(/\r?\n/g,' ')}"`).join(',')).join('\r\n');
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8'}));a.download='census2027_'+today+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+async function exportCSV(hs,name){const L0=lang;lang='en';const E=s=>s.split('|')[0],rows=[];
+ hs.forEach((h,k)=>{const hd=h.members.find(m=>m.h)||h.members[0];
+  rows.push(['Building No',h.bno||'','House No',hn(h),'Head',hd?hd.a.q1||'':'','EB',h.eb||'','Enumerator',cfg.enu||'','Date',dmy(h.date)||'','Address',addrOf(h)]);
+  rows.push(['Question',...h.members.map((m,i)=>'Member '+(i+1)+(m.h?' (Head)':''))]);
+  Q.forEach(x=>rows.push(['Q'+x.n+'. '+E(x.t),...h.members.map(m=>NA(x.n,m.a)?'N/A':show(x,m.a))]));
+  if(k<hs.length-1)rows.push([],[])});
+ lang=L0;
+ const c=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""').replace(/\r?\n/g,' ')}"`).join(',')).join('\r\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8'}));a.download=name||('census2027_'+today+'.csv');a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+ const now=Date.now();await Promise.all(hs.map(h=>{h.exp=now;return put(h)}));R()}
 /* ---------- actions ---------- */
 const P=async()=>{if(!V.dirty)return;V.dirty=0;const{h,m}=V;if(!h.members.includes(m))h.members.push(m);h.ts=Date.now();await put(h)};
 const A={home(){V={v:'home'};R()},
@@ -284,15 +317,29 @@ const A={home(){V={v:'home'};R()},
  ros(){V={v:'ros',h:V.h};R()},
  async backB(){await P();V.h.members.length?A.ros():A.open(V.h.id)},
  editBasic(i){V={v:'mem',h:V.h,m:V.h.members[i],dirty:0};R()},
- async delBasic(i){if(confirm(t('Delete this member?|इस सदस्य को हटाएँ?'))){V.h.members.splice(i,1);await put(V.h);R()}},
+ async delBasic(i){if(confirm(t('Move this member to Trash?|इस सदस्य को कचरा पेटी में भेजें?')+'\n\n'+mname(V.h.members[i]))){await trashM(V.h,i);R()}},
  start(){const h=V.h,j=h.members.findIndex(x=>!Q.some(q=>q.g>0&&q.n!=8&&!NA(q.n,x.a)&&q.f.some(f=>x.a[f[0]])));A.det(j<0?0:j)},
  async back(){await P();A.open(V.h.id)},
- async delHH(){if(confirm(t('Delete this family and all its members?|इस परिवार और सभी सदस्यों को हटाएँ?'))){await del(V.h.id);A.home()}},
- async delMem(i){if(confirm(t('Delete this member?|इस सदस्य को हटाएँ?'))){V.h.members.splice(i,1);await put(V.h);R()}},
+ async delHH(){const h=V.h,hd=h.members.find(m=>m.h);if(confirm(t('Move this family and all its members to Trash?|इस परिवार और सभी सदस्यों को कचरा पेटी में भेजें?')+'\n\n'+(hd?mname(hd):'')+' · '+hn(h)+' · '+h.members.length+' '+t('members|सदस्य'))){await tput({tid:uid(),type:'family',ts:Date.now(),label:hd?mname(hd):'(no head)',sub:'House '+hn(h)+' · EB '+(h.eb||'—')+' · '+h.members.length+' members',data:h});await del(h.id);A.home()}},
+ trash(){V={v:'trash'};R()},
+ async trashRestore(tid){const x=TR.find(y=>y.tid===tid);if(!x)return;if(x.type==='family')await put(x.data);else{const h=(await all()).find(y=>y.id===x.hhId);if(!h){alert(t('Restore the family first.|पहले परिवार को वापस लाएँ।'));return}if(!h.members.some(m=>m.id===x.data.id)){if(x.data.h&&h.members.some(m=>m.h)){x.data.h=false;x.data.a.q2=''}h.members.splice(Math.min(x.idx??h.members.length,h.members.length),0,x.data);h.ts=Date.now();await put(h)}}await tdel(tid);R()},
+ async trashDrop(tid){if(confirm(t('Delete this item permanently? This cannot be undone.|इसे हमेशा के लिए हटाएँ? यह वापस नहीं होगा।'))){await tdel(tid);R()}},
+ async backup(){const d={app:'census27',v:1,at:Date.now(),cfg:{enu:cfg.enu,ebs:cfg.ebs},families:await all(),trash:await tall()},dt=new Date(),z=n=>String(n).padStart(2,'0'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));a.download='census2027_backup_'+dt.getFullYear()+z(dt.getMonth()+1)+z(dt.getDate())+'_'+z(dt.getHours())+z(dt.getMinutes())+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);cfg.lastBackup=Date.now();saveCfg();R()},
+ restore(f){if(!f)return;const r=new FileReader();r.onload=async()=>{let d;try{d=JSON.parse(r.result)}catch(e){}if(!d||d.app!=='census27'||!Array.isArray(d.families)){alert(t('This is not a valid backup file.|यह वैध बैकअप फ़ाइल नहीं है।'));return}
+  if(!confirm(d.families.length+' '+t('families in this file. Merge them into this device? (the newer copy of each family is kept)|परिवार इस फ़ाइल में हैं। क्या इन्हें इस डिवाइस में जोड़ें? (हर परिवार की नई प्रति रखी जाएगी)')))return;
+  const cur=Object.fromEntries((await all()).map(h=>[h.id,h]));let add=0,upd=0,keep=0;
+  for(const h of d.families){const c=cur[h.id];if(!c){await put(h);add++}else if((h.ts||0)>(c.ts||0)){await put(h);upd++}else keep++}
+  const ct=new Set((await tall()).map(x=>x.tid));for(const x of d.trash||[])if(!ct.has(x.tid))await tput(x);
+  if(d.cfg){if(!cfg.enu&&d.cfg.enu)cfg.enu=d.cfg.enu;cfg.ebs=[...new Set([...cfg.ebs,...(d.cfg.ebs||[]),...d.families.map(h=>h.eb).filter(Boolean)])];saveCfg()}
+  alert(t('Restored|वापस लाया गया')+': '+add+' '+t('new|नए')+', '+upd+' '+t('updated|अद्यतन')+', '+keep+' '+t('unchanged|जस के तस'));V={v:'home'};R()};r.readAsText(f)},
+ async delMem(i){if(confirm(t('Move this member to Trash?|इस सदस्य को कचरा पेटी में भेजें?')+'\n\n'+mname(V.h.members[i]))){await trashM(V.h,i);R()}},
+ expOne(id){const h=(V.h&&V.h.id===id&&V.h)||HH.find(x=>x.id===id);if(!h)return;const hd=h.members.find(m=>m.h);exportCSV([h],('census2027_'+(hn(h)||'house')+'_'+(hd?mname(hd):'family')).replace(/[^\w\u0900-\u097F-]+/g,'_')+'_'+today+'.csv')},
  exp:exportCSV};
 const M=$('#m');
 M.addEventListener('click',async e=>{const tb=e.target.closest('[data-ebt]');if(tb){ebTab=tb.dataset.ebt;R();return}const b=e.target.closest('[data-eb]');if(b){V.h.eb=V.h.eb===b.dataset.eb?'':b.dataset.eb;R();return}const c=e.target.closest('.chip');if(!c||!['mem','det'].includes(V.v))return;const a=V.m.a,k=c.dataset.k,o=a[k];if(k==='q2'&&V.m.h)return;a[k]=o===c.dataset.v?'':c.dataset.v;if(a[k]!==o)a[k+'_x']='';V.dirty=1;if(V.v==='det')await P();R()});
 M.addEventListener('change',async e=>{const el=e.target;
+if(el.id==='rf'){const f=el.files[0];el.value='';A.restore(f);return}
+if(el.dataset.expd){const h=HH.find(x=>x.id===el.dataset.expd);if(h){h.exp=el.checked?Date.now():0;await put(h)}R();return}
 if(el.dataset.neweb){V.h.newEB=el.checked?1:0;if(el.checked)V.h.eb='';R();return}
 if(el.dataset.same){const sm=el.dataset.same,a=V.m.a,ha=V.h.ha||{};['s','d','v'].forEach(c=>{a[sm+c]=el.checked?(ha[c]||''):''});a[sm+'_same']=el.checked?1:0;V.dirty=1;if(V.v==='det')await P();R();return}
 const k=el.dataset.k;if(V.v==='hhf'||!k)return;const o=V.m.a[k];V.m.a[k]=el.value;if(el.tagName==='SELECT'&&o!==el.value)V.m.a[k+'_x']='';V.dirty=1;if(el.dataset.d&&el.value){V.m.a.q4a=String(age(el.value));if(V.v==='det')await P();R()}else if(el.tagName==='SELECT'){if(V.v==='det')await P();R()}else P()});
