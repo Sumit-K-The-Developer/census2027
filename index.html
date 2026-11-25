@@ -42,7 +42,7 @@ table{width:100%;border-collapse:collapse}
 td{padding:9px 10px;border-bottom:1px solid var(--l);vertical-align:top}
 td:first-child{width:44px;color:var(--b2);font-weight:700}td:nth-child(2){width:46%}
 td.a{font-weight:600}td.n{color:var(--m);font-style:italic}
-details{margin-bottom:14px}summary{display:block;list-style:none;cursor:pointer;font-weight:700;font-size:18px;padding:12px 16px;background:#e3eaf7;border-radius:8px;min-height:48px}
+details{margin-bottom:14px}summary{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;list-style:none;cursor:pointer;font-weight:700;font-size:18px;padding:12px 16px;background:#e3eaf7;border-radius:8px;min-height:48px}
 .tag{background:var(--s);color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;margin-left:8px}
 .hl{cursor:pointer}.hl:hover{border-color:var(--b2)}
 .muted{color:var(--m)}
@@ -61,8 +61,8 @@ details{margin-bottom:14px}summary{display:block;list-style:none;cursor:pointer;
 .rt th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--l);color:var(--m);font-weight:600}.rt td:nth-child(2){width:auto}
 .chk{display:flex;align-items:center;gap:10px;min-height:44px;margin-top:8px;cursor:pointer}.chk input{width:24px;height:24px;flex:none}
 .tab b.ok{color:var(--ok)}.tab.on b.ok{color:#a5f0cf}
-.pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-weight:400;font-size:15px}
-.pill{background:#fff;border:1px solid var(--l);border-radius:14px;padding:2px 10px;color:var(--t)}
+.pills{display:contents}
+.pill{background:#fff;border:1px solid var(--l);border-radius:14px;padding:2px 10px;color:var(--t);font-weight:400;font-size:15px}
 summary::-webkit-details-marker{display:none}summary::before{content:'▸ ';color:var(--b2)}details[open]>summary::before{content:'▾ '}
 .q{position:relative}.q.key .ql{padding-right:22px}.kd{position:absolute;top:14px;right:6px;width:10px;height:10px;border-radius:50%;background:#1fa463}
 </style></head>
@@ -193,7 +193,7 @@ const addrOf=h=>[h.addr,(h.ha||{}).v,(h.ha||{}).d,(h.ha||{}).s].filter(Boolean).
 famsOf=()=>ebTab===''?HH:HH.filter(h=>(h.eb||'-')===ebTab);
 function homeV(){const L=famsOf(),ms=L.flatMap(h=>h.members),ebs=[...new Set([...cfg.ebs,...HH.map(h=>h.eb).filter(Boolean)])];if(HH.some(h=>!h.eb))ebs.push('-');
  const tb=(v,l)=>`<button class="tab${ebTab===v?' on':''}" data-ebt="${esc(v)}">${l}</button>`,en=e=>e==='-'?t('No EB|EB नहीं'):'EB '+esc(e);
- return`${bkBanner()}<div class="tabs">${tb('',t('All EBs|सभी EB')+' ('+HH.length+')')}${ebs.map(e=>tb(e,en(e)+' ('+HH.filter(h=>(h.eb||'-')===e).length+')')).join('')}</div>
+ return`<div class="tabs">${tb('',t('All EBs|सभी EB')+' ('+HH.length+')')}${ebs.map(e=>tb(e,en(e)+' ('+HH.filter(h=>(h.eb||'-')===e).length+')')).join('')}</div>
 <div class="card stats"><div class="stat"><b>${L.length}</b>${t('Families|परिवार')}</div><div class="stat"><b>${ms.length}</b>${t('Persons|व्यक्ति')}</div><div class="stat"><b>${ms.filter(m=>m.a.q3==='Male').length}</b>${t('Male|पुरुष')}</div><div class="stat"><b>${ms.filter(m=>m.a.q3==='Female').length}</b>${t('Female|महिला')}</div></div>
 <div class="row" style="margin-bottom:14px"><button class="btn p" onclick="A.addFam()">+ ${t('Add family|परिवार जोड़ें')}</button><input type="search" style="flex:1;min-width:200px;width:auto" placeholder="${t('Search house, building, EB, address or head name|मकान, भवन, EB, पता या मुखिया का नाम खोजें')}" value="${esc(filt)}" oninput="filt=this.value;$('#lst').innerHTML=lst()"><button class="btn" onclick="A.exp(famsOf())" ${L.length?'':'disabled'}>${t('Export CSV|CSV निर्यात')} – ${ebTab?en(ebTab):t('all|सभी')}</button></div><div class="row" style="margin-bottom:14px"><button class="btn" onclick="A.backup()">⬇ ${t('Backup (file)|बैकअप (फ़ाइल)')}</button><button class="btn" onclick="$('#rf').click()">⬆ ${t('Restore from backup|बैकअप से वापस लाएँ')}</button><button class="btn" onclick="A.trash()">🗑 ${t('Trash|कचरा पेटी')} (${TR.length})</button><input type="file" id="rf" accept=".json,application/json" hidden></div><div id="lst">${lst()}</div>`}
 function lst(){const f=filt.trim().toLowerCase(),L=famsOf().filter(h=>!f||[h.no,h.hno,h.bno,h.eb,addrOf(h),...h.members.map(m=>m.a.q1)].join(' ').toLowerCase().includes(f));
@@ -219,7 +219,7 @@ const keyInfo=m=>{const a=m.a,fv=(n,k)=>{const x=Q.find(q=>q.n===n),f=x.f.find(f
  return P(fv(3,'q3'),'Sex|लिंग')+P(dob,'Date of birth (age)|जन्मतिथि (आयु)')+(m.h?'':P(fv(2,'q2'),'Relation with head|मुखिया से संबंध'))+P(fv(5,'q5'),'Marital status|वैवाहिक स्थिति')+P(cs,'Caste|जाति')+P(ql,'Qualification|योग्यता')+P(NA(20,a)?'':a.q20,'Occupation|व्यवसाय')+P(ad,'Aadhaar|आधार')+P(a.q36,'Mobile|मोबाइल')};
 const hhActions=()=>{const h=V.h,n=h.members.length;return`<button class="hb" onclick="A.home()">← ${t('Families|परिवार')}</button><button class="hb" onclick="A.ros()" ${n?'':'disabled'}>${t('Members|सदस्य')}</button><button class="hb p" onclick="A.det(0)" ${n?'':'disabled'}>${t('Detailed entry|विस्तृत प्रविष्टि')}</button><button class="hb" onclick="A.newMem(V.h)">+ ${n?t('Member|सदस्य'):t('Head|मुखिया')}</button><button class="hb" onclick="A.editHH()">${t('Edit|बदलें')}</button><button class="hb" onclick="A.expOne(V.h.id)">${t('Export|निर्यात')}</button><button class="hb d" onclick="A.delHH()">${t('Delete|हटाएँ')}</button>`};
 function hhV(){const h=V.h;return`<div class="card"><h2 style="margin:0 0 6px">${t('House No.|मकान सं.')} ${esc(hn(h)||'—')} · ${t('Building No.|भवन सं.')} ${esc(h.bno||'—')} · EB ${esc(h.eb||'—')}</h2><div>${esc(addrOf(h))||'—'}</div><div class="muted">${t('Enumerator|गणनाकार')}: ${esc(cfg.enu)} · ${t('Date|दिनांक')}: ${dmy(h.date)}</div></div>
-${h.members.map((m,i)=>`<details><summary><div>${i+1}. ${esc(mname(m))}${m.h?`<span class="tag">${t('Head|मुखिया')}</span>`:''}</div><div class="pills">${keyInfo(m)}</div></summary><div class="card" style="margin-top:8px"><div class="row" style="margin-bottom:8px"><button class="btn" onclick="A.editMem(${i})">${t('Edit|बदलें')}</button>${m.h&&h.members.length>1?'':`<button class="btn d" onclick="A.delMem(${i})">${t('Delete|हटाएँ')}</button>`}</div><table>${Q.map(x=>{const na=NA(x.n,m.a);return`<tr><td>${x.n}</td><td>${esc(t(x.t))}</td><td class="${na?'n':'a'}">${na?t('Not applicable|लागू नहीं'):esc(show(x,m.a))||'—'}</td></tr>`}).join('')}</table></div></details>`).join('')}
+${h.members.map((m,i)=>`<details><summary><b>${i+1}. ${esc(mname(m))}</b>${m.h?`<span class="tag" style="margin-left:0">${t('Head|मुखिया')}</span>`:''}<span class="pills">${keyInfo(m)}</span></summary><div class="card" style="margin-top:8px"><div class="row" style="margin-bottom:8px"><button class="btn" onclick="A.editMem(${i})">${t('Edit|बदलें')}</button>${m.h&&h.members.length>1?'':`<button class="btn d" onclick="A.delMem(${i})">${t('Delete|हटाएँ')}</button>`}</div><table>${Q.map(x=>{const na=NA(x.n,m.a);return`<tr><td>${x.n}</td><td>${esc(t(x.t))}</td><td class="${na?'n':'a'}">${na?t('Not applicable|लागू नहीं'):esc(show(x,m.a))||'—'}</td></tr>`}).join('')}</table></div></details>`).join('')}
 `}
 const cand=(k,m,h)=>{const a=m.a,ag=+a.q4a||0,fm=x=>x==='Male'||x==='Female';
  return h.members.filter(x=>{if(x===m||!x.a.q1)return false;const sx=x.a.q3,xa=+x.a.q4a||0;
@@ -281,8 +281,6 @@ function detV(){const{h,mi,s}=V,m=h.members[mi];prefill(h,m);const fp=fprog(h),m
 <div class="row"><button class="btn" ${mi==0&&s<=1?'disabled':''} onclick="A.go(-1)">← ${t('Previous|पिछला')}</button><span class="sp"></span><button class="btn p" onclick="A.go(1)">${nxt} →</button></div></section></div>`}
 /* ---------- trash & backup ---------- */
 const ago=ts=>{const m=Math.round((Date.now()-ts)/60000);return m<1?t('just now|अभी'):m<60?m+' '+t('min ago|मिनट पहले'):m<1440?Math.round(m/60)+' '+t('h ago|घंटे पहले'):Math.round(m/1440)+' '+t('days ago|दिन पहले')},
-stale=()=>HH.length&&(!cfg.lastBackup||HH.some(h=>h.ts>cfg.lastBackup)||TR.some(x=>x.ts>cfg.lastBackup)),
-bkBanner=()=>HH.length||TR.length?`<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;${stale()?'border-color:#e0a030;background:#fff8e8':''}"><span>${cfg.lastBackup?t('Last backup|पिछला बैकअप')+': '+ago(cfg.lastBackup):t('No backup yet|अभी तक कोई बैकअप नहीं')}${stale()?' · <b>'+t('new changes are not backed up|नए बदलावों का बैकअप नहीं है')+'</b>':''}</span><span class="sp"></span><button class="btn p" style="min-height:44px" onclick="A.backup()">${t('Back up now|अभी बैकअप लें')}</button></div>`:'',
 trashM=async(h,i)=>{const m=h.members[i];await tput({tid:uid(),type:'member',ts:Date.now(),label:mname(m),sub:'Family '+hn(h)+' · EB '+(h.eb||'—'),hhId:h.id,idx:i,data:m});h.members.splice(i,1);h.ts=Date.now();await put(h)};
 function trashV(){const L=[...TR].sort((a,b)=>b.ts-a.ts);
  return`<div class="row"><button class="btn" onclick="A.home()">← ${t('Dashboard|डैशबोर्ड')}</button><h2 style="margin:0">${t('Trash|कचरा पेटी')}</h2></div>
