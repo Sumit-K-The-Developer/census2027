@@ -288,13 +288,27 @@ function trashV(){const L=[...TR].sort((a,b)=>b.ts-a.ts);
 ${L.length?L.map(x=>`<div class="card"><div class="row"><div class="sp"><b>${esc(x.label)}</b><span class="tag">${x.type==='family'?t('Family|परिवार'):t('Member|सदस्य')}</span><div class="muted">${esc(x.sub)} · ${t('deleted|हटाया')} ${ago(x.ts)}</div></div><button class="btn p" onclick="A.trashRestore('${x.tid}')">${t('Restore|वापस लाएँ')}</button><button class="btn d" onclick="A.trashDrop('${x.tid}')">${t('Delete forever|हमेशा के लिए हटाएँ')}</button></div></div>`).join(''):`<div class="card muted">${t('Trash is empty.|कचरा पेटी खाली है।')}</div>`}`}
 /* ---------- export ---------- */
 /* ---------- export: Excel (.xlsx, merged bold headings, auto widths/heights) or CSV ---------- */
+const SHORTQ=['Name','Relation with head','Sex','Date of birth (age)','Marital status','Age at marriage','Spouse name','Nationality','Religion','SC / ST / other caste',"Father's name","Mother's name",'Disability (type)','Mother tongue + others','Read-write / Digital','Studying now','Qualification – subject','Worked last year','Economic activity','Occupation','Industry / trade','Class of worker','Non-economic activity','Seeking / available','Travel to work','Birth place','Last residence','Reason for migration','Years at this place','Permanent address','Living children','Children born alive','Born alive last year','COVID vaccination','Bank accounts','Mobile number','Aadhaar number','Voter ID number','Passport number','Driving licence'];
+const xcell=(x,a)=>{const F=k=>x.f.find(f=>f[0]===k),g=k=>{if(!F(k))return'';const v=disp(F(k),a[k]);return v&&a[k+'_x']?v+' ('+a[k+'_x']+')':v},pl=k=>[a[k+'v'],a[k+'d'],a[k+'s']].filter(Boolean).join(', ');
+ switch(x.n){
+  case 4:return a.q4d?dmy(a.q4d)+(a.q4a?' ('+a.q4a+' y)':''):a.q4a?a.q4a+' y':'';
+  case 13:return a.q13h==='Yes'?'Yes'+(g('q13t')?' – '+g('q13t'):''):g('q13h');
+  case 14:return a.q14a?a.q14a+(a.q14b?' + '+a.q14b:''):a.q14b||'';
+  case 15:return a.q15a||a.q15b?(a.q15a||'-')+' / '+(a.q15b||'-'):'';
+  case 17:return[g('q17a'),a.q17b].filter(Boolean).join(' – ');
+  case 25:return[g('q25'),a.q25d?a.q25d+' km':'',a.q25t?a.q25t+' min':''].filter(Boolean).join(' · ');
+  case 26:case 27:case 30:return pl('q'+x.n);
+  case 31:case 32:case 33:{const k='q'+x.n,m=a[k+'m'],f=a[k+'f'];return m||f?(m||0)+' son(s), '+(f||0)+' daughter(s)':a[k]?a[k]+' (total)':''}
+  case 34:return a.q34==='Not vaccinated'?g('q34'):[g('q34'),pl('q34')].filter(Boolean).join(' – ');
+  case 36:case 37:case 38:case 39:case 40:{const k='q'+x.n;return a[k+'h']==='No'?'No':(a[k]||a[k+'h']||'')}
+  default:return show(x,a)}};
 const famBlocks=hs=>{const L0=lang;lang='en';const E=s=>s.split('|')[0];
  const out=hs.map(h=>{const hd=h.members.find(m=>m.h)||h.members[0],hdn=hd?hd.a.q1||'':'';
   return{title:'Building No: '+(h.bno||'—')+'   |   House No: '+(hn(h)||'—')+'   |   Head: '+(hdn||'—'),
    sub:['EB: '+(h.eb||'—'),'Enumerator: '+(cfg.enu||'—'),'Date: '+(dmy(h.date)||'—'),'Address: '+(addrOf(h)||'—')].join('   |   '),
    pairs:['Building No',h.bno||'','House No',hn(h),'Head',hdn,'EB',h.eb||'','Enumerator',cfg.enu||'','Date',dmy(h.date)||'','Address',addrOf(h)],
    head:['Question',...h.members.map((m,i)=>'Member '+(i+1)+(m.h?' (Head)':''))],
-   rows:Q.map(x=>[{v:'Q'+x.n+'. '+E(x.t),q:1},...h.members.map(m=>NA(x.n,m.a)?{v:'N/A',na:1}:{v:show(x,m.a)})])}});
+   rows:Q.map(x=>[{v:'Q'+x.n+'. '+SHORTQ[x.n-1],q:1},...h.members.map(m=>NA(x.n,m.a)?{v:'N/A',na:1}:{v:xcell(x,m.a)})])}});
  lang=L0;return out};
 const toCSV=bl=>{const rows=[];bl.forEach((b,k)=>{rows.push(b.pairs,b.head,...b.rows.map(r=>r.map(c=>c.v)));if(k<bl.length-1)rows.push([],[])});
  return'\ufeff'+rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""').replace(/\r?\n/g,' ')}"`).join(',')).join('\r\n')};
@@ -314,8 +328,8 @@ vw=s=>[...String(s)].reduce((a,c)=>a+(c.charCodeAt(0)>255?1.6:1),0),
 nln=(s,w)=>String(s).split('\n').reduce((a,p)=>a+Math.max(1,Math.ceil(vw(p)/Math.max(w-1.5,4))),0);
 const XNS='http://schemas.openxmlformats.org/spreadsheetml/2006/main',XH='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
 XSTY=XH+`<styleSheet xmlns="${XNS}"><fonts count="5"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><i/><sz val="11"/><color rgb="FF8A93A6"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF16325C"/><name val="Calibri"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF16325C"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE3EAF7"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF3F5F8"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBFC7D8"/></left><right style="thin"><color rgb="FFBFC7D8"/></right><top style="thin"><color rgb="FFBFC7D8"/></top><bottom style="thin"><color rgb="FFBFC7D8"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1" indent="1"/></xf><xf numFmtId="0" fontId="4" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1" indent="1"/></xf><xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
-function toXLSX(bl){const nm=Math.max(1,...bl.map(b=>b.head.length-1)),W=[54];
- for(let j=1;j<=nm;j++){let mx=16;bl.forEach(b=>{if(b.head[j]!==undefined){mx=Math.max(mx,vw(b.head[j])+4);b.rows.forEach(r=>{mx=Math.max(mx,vw(r[j].v)*0.95+3)})}});W.push(Math.min(mx,42))}
+function toXLSX(bl){const nm=Math.max(1,...bl.map(b=>b.head.length-1)),W=[Math.max(18,Math.min(44,Math.max(...bl.flatMap(b=>b.rows.map(r=>vw(r[0].v))))+3))];
+ for(let j=1;j<=nm;j++){let mx=16;bl.forEach(b=>{if(b.head[j]!==undefined){mx=Math.max(mx,vw(b.head[j])+4);b.rows.forEach(r=>{mx=Math.max(mx,vw(r[j].v)*0.95+3)})}});W.push(Math.min(mx,34))}
  const R=[],mg=[];let n=0;
  const row=(cells,ht)=>{n++;R.push(`<row r="${n}" ht="${ht}" customHeight="1">${cells.map((c,i)=>`<c r="${cl(i)}${n}" s="${c.s}" t="inlineStr"><is><t xml:space="preserve">${xe(c.v)}</t></is></c>`).join('')}</row>`);return n};
  bl.forEach((b,k)=>{const nc=b.head.length,fw=W.slice(0,nc).reduce((a,c)=>a+c,0);
